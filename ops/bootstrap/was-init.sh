@@ -198,6 +198,13 @@ LOCAL_VERSION_FILE="${STATE_DIR}/version.txt"
 TARGET_JAR="/opt/lms/backend/lms-backend.jar"
 TMP_DIR="$(mktemp -d)"
 FORCE="${1:-}"
+AWS_COMMON_ARGS=(
+  --no-cli-pager
+  --cli-connect-timeout 5
+  --cli-read-timeout 30
+  --endpoint-url "${NCP_S3_ENDPOINT}"
+  --region "${AWS_DEFAULT_REGION}"
+)
 
 cleanup() {
   rm -rf "${TMP_DIR}"
@@ -206,7 +213,7 @@ trap cleanup EXIT
 
 mkdir -p "${STATE_DIR}" /opt/lms/backend
 
-remote_version="$(aws --endpoint-url "${NCP_S3_ENDPOINT}" --region "${AWS_DEFAULT_REGION}" s3 cp "s3://${NCP_DEPLOY_BUCKET}/${VERSION_KEY}" - 2>/dev/null | tr -d '\r\n' || true)"
+remote_version="$(aws "${AWS_COMMON_ARGS[@]}" s3 cp "s3://${NCP_DEPLOY_BUCKET}/${VERSION_KEY}" - 2>/dev/null | tr -d '\r\n' || true)"
 if [[ -z "${remote_version}" ]]; then
   echo "ERROR: could not read remote version"
   exit 1
@@ -223,8 +230,7 @@ if [[ "${FORCE}" != "--force" && "${local_version}" == "${remote_version}" ]]; t
 fi
 
 artifact_path="${TMP_DIR}/lms-was-deploy.tar.gz"
-aws --endpoint-url "${NCP_S3_ENDPOINT}" --region "${AWS_DEFAULT_REGION}" \
-  s3 cp "s3://${NCP_DEPLOY_BUCKET}/${ARTIFACT_KEY}" "${artifact_path}"
+aws "${AWS_COMMON_ARGS[@]}" s3 cp "s3://${NCP_DEPLOY_BUCKET}/${ARTIFACT_KEY}" "${artifact_path}"
 
 tar -xzf "${artifact_path}" -C "${TMP_DIR}"
 
@@ -257,6 +263,8 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 ExecStart=/usr/local/bin/lms-was-sync.sh
+TimeoutStartSec=120
+TimeoutStopSec=20
 EOF
 
 cat > /etc/systemd/system/lms-was-sync.timer <<EOF
