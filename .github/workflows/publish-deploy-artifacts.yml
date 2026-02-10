@@ -51,7 +51,7 @@ jobs:
           : "${AWS_DEFAULT_REGION:?NCP_S3_REGION is required}"
           : "${NCP_S3_ENDPOINT:?NCP_S3_ENDPOINT is required}"
           : "${DEPLOY_BUCKET:?NCP_DEPLOY_BUCKET is required}"
-          DEPLOY_PREFIX="${DEPLOY_PREFIX:-lms-deploy}"
+          DEPLOY_PREFIX="${DEPLOY_PREFIX:-uploads/lms-deploy}"
           VERSION="${GIT_SHA:0:12}"
           UTC_NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 

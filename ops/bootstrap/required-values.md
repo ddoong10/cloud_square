@@ -9,7 +9,7 @@
 - `NCP_S3_ENDPOINT`: 예) `https://kr.object.ncloudstorage.com`
 - `NCP_S3_REGION`: 예) `kr-standard`
 - `NCP_DEPLOY_BUCKET`: 배포 아티팩트 저장 버킷
-- `NCP_DEPLOY_PREFIX`: 기본 `lms-deploy`
+- `NCP_DEPLOY_PREFIX`: 기본 `uploads/lms-deploy`
 
 ## WEB 전용
 

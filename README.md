@@ -267,7 +267,7 @@ python3 -m http.server 5500
 - `NCP_S3_ENDPOINT` (예: `https://kr.object.ncloudstorage.com`)
 - `NCP_S3_REGION` (예: `kr-standard`)
 - `NCP_DEPLOY_BUCKET`
-- `NCP_DEPLOY_PREFIX` (없으면 `lms-deploy`)
+- `NCP_DEPLOY_PREFIX` (없으면 `uploads/lms-deploy`)
 
 워크플로 동작:
 1. `scripts/package-deploy.sh` 실행
