@@ -1,0 +1,248 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+exec > >(tee -a /var/log/lms-was-init.log) 2>&1
+
+# Fill these in Launch Template UserData before use.
+NCP_DEPLOY_ACCESS_KEY="${NCP_DEPLOY_ACCESS_KEY:-TODO_NCP_DEPLOY_ACCESS_KEY}"
+NCP_DEPLOY_SECRET_KEY="${NCP_DEPLOY_SECRET_KEY:-TODO_NCP_DEPLOY_SECRET_KEY}"
+NCP_S3_ENDPOINT="${NCP_S3_ENDPOINT:-https://kr.object.ncloudstorage.com}"
+NCP_S3_REGION="${NCP_S3_REGION:-kr-standard}"
+NCP_DEPLOY_BUCKET="${NCP_DEPLOY_BUCKET:-lms-static}"
+NCP_DEPLOY_PREFIX="${NCP_DEPLOY_PREFIX:-lms-deploy}"
+SYNC_INTERVAL_MINUTES="${SYNC_INTERVAL_MINUTES:-2}"
+
+# Runtime env for backend service.
+SPRING_PROFILES_ACTIVE="${SPRING_PROFILES_ACTIVE:-prod}"
+DB_HOST="${DB_HOST:-TODO_DB_HOST}"
+DB_PORT="${DB_PORT:-3306}"
+DB_NAME="${DB_NAME:-lms-db}"
+DB_USER="${DB_USER:-user}"
+DB_PASSWORD="${DB_PASSWORD:-TODO_DB_PASSWORD}"
+JWT_SECRET="${JWT_SECRET:-TODO_JWT_SECRET}"
+JWT_ACCESS_TOKEN_EXPIRATION_SECONDS="${JWT_ACCESS_TOKEN_EXPIRATION_SECONDS:-3600}"
+CORS_ALLOWED_ORIGIN="${CORS_ALLOWED_ORIGIN:-http://127.0.0.1:*,http://localhost:*,https://lms.uoscholar-server.store,https://static.uoscholar-server.store}"
+NCP_ACCESS_KEY="${NCP_ACCESS_KEY:-TODO_NCP_DEPLOY_ACCESS_KEY}"
+NCP_SECRET_KEY="${NCP_SECRET_KEY:-TODO_NCP_DEPLOY_SECRET_KEY}"
+NCP_BUCKET="${NCP_BUCKET:-lms-static}"
+STATIC_BASE_URL="${STATIC_BASE_URL:-https://static.uoscholar-server.store}"
+KMS_ENABLED="${KMS_ENABLED:-true}"
+KMS_BASE_URL="${KMS_BASE_URL:-https://ocapi.ncloud.com}"
+KMS_KEY_TAG="${KMS_KEY_TAG:-TODO_KMS_KEY_TAG}"
+KMS_ACCESS_KEY="${KMS_ACCESS_KEY:-${NCP_ACCESS_KEY}}"
+KMS_SECRET_KEY="${KMS_SECRET_KEY:-${NCP_SECRET_KEY}}"
+KMS_TOKEN_CREATOR_ID="${KMS_TOKEN_CREATOR_ID:-TODO_KMS_TOKEN_CREATOR_ID}"
+DEMO_USER_EMAIL="${DEMO_USER_EMAIL:-demo@lms.local}"
+DEMO_USER_PASSWORD="${DEMO_USER_PASSWORD:-demo1234!}"
+DEMO_ADMIN_EMAIL="${DEMO_ADMIN_EMAIL:-admin@lms.local}"
+DEMO_ADMIN_PASSWORD="${DEMO_ADMIN_PASSWORD:-admin1234!}"
+
+require_value() {
+  local key="$1"
+  local value="$2"
+  if [[ -z "${value}" || "${value}" == TODO_* ]]; then
+    echo "ERROR: ${key} is not configured"
+    exit 1
+  fi
+}
+
+require_value "NCP_DEPLOY_ACCESS_KEY" "${NCP_DEPLOY_ACCESS_KEY}"
+require_value "NCP_DEPLOY_SECRET_KEY" "${NCP_DEPLOY_SECRET_KEY}"
+require_value "NCP_DEPLOY_BUCKET" "${NCP_DEPLOY_BUCKET}"
+require_value "DB_PASSWORD" "${DB_PASSWORD}"
+require_value "JWT_SECRET" "${JWT_SECRET}"
+require_value "NCP_ACCESS_KEY" "${NCP_ACCESS_KEY}"
+require_value "NCP_SECRET_KEY" "${NCP_SECRET_KEY}"
+require_value "KMS_KEY_TAG" "${KMS_KEY_TAG}"
+require_value "KMS_TOKEN_CREATOR_ID" "${KMS_TOKEN_CREATOR_ID}"
+
+install_packages() {
+  if command -v apt-get >/dev/null 2>&1; then
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update -y
+    apt-get install -y curl tar awscli ca-certificates rsync
+    if ! command -v java >/dev/null 2>&1; then
+      apt-get install -y openjdk-17-jre-headless
+    fi
+    return
+  fi
+  if command -v dnf >/dev/null 2>&1; then
+    dnf install -y curl tar awscli ca-certificates rsync java-17-openjdk-headless
+    return
+  fi
+  if command -v yum >/dev/null 2>&1; then
+    yum install -y curl tar awscli ca-certificates rsync java-17-openjdk-headless
+    return
+  fi
+  echo "ERROR: unsupported package manager"
+  exit 1
+}
+
+install_packages
+
+if ! id lms >/dev/null 2>&1; then
+  useradd --system --home-dir /opt/lms/backend --shell /sbin/nologin lms || true
+fi
+
+mkdir -p /etc/lms /opt/lms/backend /opt/lms/was /var/lib/lms-was
+chown -R lms:lms /opt/lms/backend
+
+cat > /etc/lms/bootstrap.env <<EOF
+AWS_ACCESS_KEY_ID=${NCP_DEPLOY_ACCESS_KEY}
+AWS_SECRET_ACCESS_KEY=${NCP_DEPLOY_SECRET_KEY}
+AWS_DEFAULT_REGION=${NCP_S3_REGION}
+NCP_S3_ENDPOINT=${NCP_S3_ENDPOINT}
+NCP_DEPLOY_BUCKET=${NCP_DEPLOY_BUCKET}
+NCP_DEPLOY_PREFIX=${NCP_DEPLOY_PREFIX}
+EOF
+chmod 600 /etc/lms/bootstrap.env
+
+cat > /opt/lms/backend/.env <<EOF
+SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+DB_HOST=${DB_HOST}
+DB_PORT=${DB_PORT}
+DB_NAME=${DB_NAME}
+DB_USER=${DB_USER}
+DB_PASSWORD=${DB_PASSWORD}
+JWT_SECRET=${JWT_SECRET}
+JWT_ACCESS_TOKEN_EXPIRATION_SECONDS=${JWT_ACCESS_TOKEN_EXPIRATION_SECONDS}
+CORS_ALLOWED_ORIGIN=${CORS_ALLOWED_ORIGIN}
+NCP_ACCESS_KEY=${NCP_ACCESS_KEY}
+NCP_SECRET_KEY=${NCP_SECRET_KEY}
+NCP_S3_ENDPOINT=${NCP_S3_ENDPOINT}
+NCP_S3_REGION=${NCP_S3_REGION}
+NCP_BUCKET=${NCP_BUCKET}
+STATIC_BASE_URL=${STATIC_BASE_URL}
+KMS_ENABLED=${KMS_ENABLED}
+KMS_BASE_URL=${KMS_BASE_URL}
+KMS_KEY_TAG=${KMS_KEY_TAG}
+KMS_ACCESS_KEY=${KMS_ACCESS_KEY}
+KMS_SECRET_KEY=${KMS_SECRET_KEY}
+KMS_TOKEN_CREATOR_ID=${KMS_TOKEN_CREATOR_ID}
+DEMO_USER_EMAIL=${DEMO_USER_EMAIL}
+DEMO_USER_PASSWORD=${DEMO_USER_PASSWORD}
+DEMO_ADMIN_EMAIL=${DEMO_ADMIN_EMAIL}
+DEMO_ADMIN_PASSWORD=${DEMO_ADMIN_PASSWORD}
+EOF
+chown lms:lms /opt/lms/backend/.env
+chmod 600 /opt/lms/backend/.env
+
+cat > /etc/systemd/system/lms-backend.service <<'EOF'
+[Unit]
+Description=LMS Backend Service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/lms/backend
+EnvironmentFile=/opt/lms/backend/.env
+ExecStart=/usr/bin/java -jar /opt/lms/backend/lms-backend.jar
+SuccessExitStatus=143
+Restart=always
+RestartSec=5
+User=lms
+Group=lms
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+cat > /usr/local/bin/lms-was-sync.sh <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+exec 9>/var/lock/lms-was-sync.lock
+flock -n 9 || exit 0
+
+set -a
+source /etc/lms/bootstrap.env
+set +a
+
+VERSION_KEY="${NCP_DEPLOY_PREFIX}/was/latest/version.txt"
+ARTIFACT_KEY="${NCP_DEPLOY_PREFIX}/was/latest/lms-was-deploy.tar.gz"
+STATE_DIR="/var/lib/lms-was"
+LOCAL_VERSION_FILE="${STATE_DIR}/version.txt"
+TARGET_JAR="/opt/lms/backend/lms-backend.jar"
+TMP_DIR="$(mktemp -d)"
+FORCE="${1:-}"
+
+cleanup() {
+  rm -rf "${TMP_DIR}"
+}
+trap cleanup EXIT
+
+mkdir -p "${STATE_DIR}" /opt/lms/backend
+
+remote_version="$(aws --endpoint-url "${NCP_S3_ENDPOINT}" --region "${AWS_DEFAULT_REGION}" s3 cp "s3://${NCP_DEPLOY_BUCKET}/${VERSION_KEY}" - 2>/dev/null | tr -d '\r\n' || true)"
+if [[ -z "${remote_version}" ]]; then
+  echo "ERROR: could not read remote version"
+  exit 1
+fi
+
+local_version=""
+if [[ -f "${LOCAL_VERSION_FILE}" ]]; then
+  local_version="$(cat "${LOCAL_VERSION_FILE}" | tr -d '\r\n')"
+fi
+
+if [[ "${FORCE}" != "--force" && "${local_version}" == "${remote_version}" ]]; then
+  echo "lms-was-sync: already latest (${remote_version})"
+  exit 0
+fi
+
+artifact_path="${TMP_DIR}/lms-was-deploy.tar.gz"
+aws --endpoint-url "${NCP_S3_ENDPOINT}" --region "${AWS_DEFAULT_REGION}" \
+  s3 cp "s3://${NCP_DEPLOY_BUCKET}/${ARTIFACT_KEY}" "${artifact_path}"
+
+tar -xzf "${artifact_path}" -C "${TMP_DIR}"
+
+if [[ ! -f "${TMP_DIR}/package/backend/app/lms-backend.jar" ]]; then
+  echo "ERROR: invalid artifact layout"
+  exit 1
+fi
+
+cp -f "${TMP_DIR}/package/backend/app/lms-backend.jar" "${TARGET_JAR}"
+chown lms:lms "${TARGET_JAR}"
+chmod 644 "${TARGET_JAR}"
+echo "${remote_version}" > "${LOCAL_VERSION_FILE}"
+
+systemctl daemon-reload
+if systemctl is-active --quiet lms-backend; then
+  systemctl restart lms-backend
+else
+  systemctl start lms-backend
+fi
+echo "lms-was-sync: deployed ${remote_version}"
+EOF
+chmod +x /usr/local/bin/lms-was-sync.sh
+
+cat > /etc/systemd/system/lms-was-sync.service <<'EOF'
+[Unit]
+Description=LMS WAS artifact sync
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/lms-was-sync.sh
+EOF
+
+cat > /etc/systemd/system/lms-was-sync.timer <<EOF
+[Unit]
+Description=LMS WAS artifact sync timer
+
+[Timer]
+OnBootSec=45s
+OnUnitActiveSec=${SYNC_INTERVAL_MINUTES}min
+Unit=lms-was-sync.service
+
+[Install]
+WantedBy=timers.target
+EOF
+
+systemctl daemon-reload
+systemctl enable lms-backend
+
+/usr/local/bin/lms-was-sync.sh --force
+systemctl enable --now lms-was-sync.timer
+
+echo "lms-was-init: completed"

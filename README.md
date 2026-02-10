@@ -245,3 +245,60 @@ python3 -m http.server 5500
 - Auto Scaling 확장 인스턴스도 동일 준비 상태여야 하므로 Launch Template에 Agent/런타임 의존성 반영
 - WEB/WAS 배포를 분리하지 않으면 롤백/헬스체크 원인 파악이 어려워짐
 - 배포 실패 시 해당 단계(SourceDeploy)에서 즉시 롤백
+
+## 9. GitHub Actions + Init Script 방식 (SourcePipeline 미사용)
+
+`git push`만으로 배포 아티팩트를 Object Storage에 올리고, 각 인스턴스는 부팅 후 자동으로 최신 버전을 동기화해 기동할 수 있습니다.
+
+추가된 파일:
+- GitHub Actions: `.github/workflows/publish-deploy-artifacts.yml`
+- WEB init script: `ops/bootstrap/web-init.sh`
+- WAS init script: `ops/bootstrap/was-init.sh`
+- WEB 최종본(UserData 복붙용): `ops/bootstrap/web-init.final.sh`
+- WAS 최종본(UserData 복붙용): `ops/bootstrap/was-init.final.sh`
+- 입력값 정리: `ops/bootstrap/required-values.md`
+
+### 9-1. GitHub Actions Secrets
+
+저장소 `Settings > Secrets and variables > Actions`에 아래 키를 추가합니다.
+
+- `NCP_DEPLOY_ACCESS_KEY`
+- `NCP_DEPLOY_SECRET_KEY`
+- `NCP_S3_ENDPOINT` (예: `https://kr.object.ncloudstorage.com`)
+- `NCP_S3_REGION` (예: `kr-standard`)
+- `NCP_DEPLOY_BUCKET`
+- `NCP_DEPLOY_PREFIX` (없으면 `lms-deploy`)
+
+워크플로 동작:
+1. `scripts/package-deploy.sh` 실행
+2. `dist/lms-web-deploy.tar.gz`, `dist/lms-was-deploy.tar.gz` 생성
+3. Object Storage `latest/` + `releases/<sha>/` 경로로 업로드
+
+### 9-2. Launch Template UserData 적용
+
+WEB ASG Launch Template:
+- `ops/bootstrap/web-init.final.sh` 내용을 UserData로 넣습니다.
+- 현재 기본 `WAS_UPSTREAM_HOST`는 `TODO_INTERNAL_LB_HOST`으로 반영되어 있습니다.
+
+WAS ASG Launch Template:
+- `ops/bootstrap/was-init.final.sh` 내용을 UserData로 넣습니다.
+
+핵심:
+- 새 인스턴스가 뜨면 init script가 자동 실행됨
+- 최초 부팅 시 최신 아티팩트를 내려받아 즉시 서비스 기동
+- 이후 systemd timer가 주기적으로 새 버전 존재 여부를 확인해 자동 반영
+
+### 9-3. WEB 보안(nginx rate limit)
+
+`web-init.sh`는 nginx에 기본 rate limit/connection limit 설정을 적용합니다.
+
+- 기본값:
+  - `WEB_RATE_LIMIT_RPS=20r/s`
+  - `WEB_RATE_LIMIT_BURST=60`
+  - `WEB_CONN_LIMIT=50`
+- 조정은 `web-init.sh` 상단 변수 변경으로 가능
+
+### 9-4. 서버 직접 접속(Putty) 필요 여부
+
+- 정상적으로 init script가 들어간 Launch Template로 ASG를 교체하면, 원칙적으로 일상 배포에 Putty는 필요 없습니다.
+- Putty는 초기 1회 점검(로그 확인/네트워크 검증) 용도로만 사용하는 것을 권장합니다.
