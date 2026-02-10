@@ -213,9 +213,20 @@ trap cleanup EXIT
 
 mkdir -p "${STATE_DIR}" /opt/lms/backend
 
-remote_version="$(aws "${AWS_COMMON_ARGS[@]}" s3 cp "s3://${NCP_DEPLOY_BUCKET}/${VERSION_KEY}" - 2>/dev/null | tr -d '\r\n' || true)"
+set +e
+remote_version_output="$(aws "${AWS_COMMON_ARGS[@]}" s3 cp "s3://${NCP_DEPLOY_BUCKET}/${VERSION_KEY}" - 2>&1)"
+remote_version_status=$?
+set -e
+
+if [[ ${remote_version_status} -ne 0 ]]; then
+  echo "ERROR: failed to read remote version from s3://${NCP_DEPLOY_BUCKET}/${VERSION_KEY}"
+  echo "${remote_version_output}"
+  exit 1
+fi
+
+remote_version="$(printf '%s' "${remote_version_output}" | tr -d '\r\n')"
 if [[ -z "${remote_version}" ]]; then
-  echo "ERROR: could not read remote version"
+  echo "ERROR: remote version is empty (s3://${NCP_DEPLOY_BUCKET}/${VERSION_KEY})"
   exit 1
 fi
 
@@ -230,7 +241,10 @@ if [[ "${FORCE}" != "--force" && "${local_version}" == "${remote_version}" ]]; t
 fi
 
 artifact_path="${TMP_DIR}/lms-was-deploy.tar.gz"
-aws "${AWS_COMMON_ARGS[@]}" s3 cp "s3://${NCP_DEPLOY_BUCKET}/${ARTIFACT_KEY}" "${artifact_path}"
+if ! aws "${AWS_COMMON_ARGS[@]}" s3 cp "s3://${NCP_DEPLOY_BUCKET}/${ARTIFACT_KEY}" "${artifact_path}"; then
+  echo "ERROR: failed to download artifact from s3://${NCP_DEPLOY_BUCKET}/${ARTIFACT_KEY}"
+  exit 1
+fi
 
 tar -xzf "${artifact_path}" -C "${TMP_DIR}"
 
