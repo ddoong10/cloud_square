@@ -218,16 +218,31 @@ remote_version_output="$(aws "${AWS_COMMON_ARGS[@]}" s3 cp "s3://${NCP_DEPLOY_BU
 remote_version_status=$?
 set -e
 
-if [[ ${remote_version_status} -ne 0 ]]; then
-  echo "ERROR: failed to read remote version from s3://${NCP_DEPLOY_BUCKET}/${VERSION_KEY}"
-  echo "${remote_version_output}"
-  exit 1
+remote_version=""
+if [[ ${remote_version_status} -eq 0 ]]; then
+  remote_version="$(printf '%s' "${remote_version_output}" | tr -d '\r\n[:space:]')"
 fi
 
-remote_version="$(printf '%s' "${remote_version_output}" | tr -d '\r\n')"
 if [[ -z "${remote_version}" ]]; then
-  echo "ERROR: remote version is empty (s3://${NCP_DEPLOY_BUCKET}/${VERSION_KEY})"
-  exit 1
+  set +e
+  artifact_etag_output="$(aws "${AWS_COMMON_ARGS[@]}" s3api head-object --bucket "${NCP_DEPLOY_BUCKET}" --key "${ARTIFACT_KEY}" --query ETag --output text 2>&1)"
+  artifact_etag_status=$?
+  set -e
+
+  if [[ ${artifact_etag_status} -ne 0 ]]; then
+    echo "ERROR: failed to resolve remote version."
+    echo "version.txt output: ${remote_version_output}"
+    echo "artifact head output: ${artifact_etag_output}"
+    exit 1
+  fi
+
+  remote_version="$(printf '%s' "${artifact_etag_output}" | tr -d '\r\n\"[:space:]')"
+  if [[ -z "${remote_version}" || "${remote_version}" == "None" ]]; then
+    echo "ERROR: remote version and artifact ETag are both empty"
+    exit 1
+  fi
+
+  echo "WARNING: version.txt missing/empty. using artifact etag as version: ${remote_version}"
 fi
 
 local_version=""
