@@ -35,6 +35,18 @@ jobs:
           fi
           aws --version
 
+      - name: Configure AWS CLI for NCP S3 compatibility
+        env:
+          AWS_DEFAULT_REGION: ${{ secrets.NCP_S3_REGION }}
+        run: |
+          set -euo pipefail
+          : "${AWS_DEFAULT_REGION:?NCP_S3_REGION is required}"
+          aws configure set default.region "${AWS_DEFAULT_REGION}"
+          aws configure set default.s3.signature_version s3v4
+          aws configure set default.s3.addressing_style path
+          aws configure set default.s3.payload_signing_enabled false
+          aws configure set default.s3.max_concurrent_requests 10
+
       - name: Verify deploy object write/delete permission
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.NCP_DEPLOY_ACCESS_KEY }}
