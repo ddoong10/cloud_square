@@ -1,0 +1,17 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo "Using Java runtime provided by SourceBuild image"
+  build:
+    commands:
+      - chmod +x scripts/package-deploy.sh
+      - ./scripts/package-deploy.sh
+
+artifacts:
+  files:
+    - dist/lms-web-deploy.tar.gz
+    - dist/lms-was-deploy.tar.gz
+  discard-paths: no
+

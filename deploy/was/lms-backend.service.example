@@ -1,0 +1,18 @@
+[Unit]
+Description=LMS Backend Service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/lms/backend
+EnvironmentFile=/opt/lms/backend/.env
+ExecStart=/usr/bin/java -jar /opt/lms/backend/lms-backend.jar
+SuccessExitStatus=143
+Restart=always
+RestartSec=5
+User=TODO_USER
+Group=TODO_GROUP
+
+[Install]
+WantedBy=multi-user.target
+

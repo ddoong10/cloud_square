@@ -1,0 +1,400 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap");
+
+:root {
+    --bg: #f7f0e8;
+    --bg-soft: #efe3d6;
+    --card: #fffdf9;
+    --line: #d7cab9;
+    --text: #1f1a15;
+    --muted: #5d5246;
+    --accent: #e0592d;
+    --accent-dark: #c7471f;
+    --accent-soft: #ffe2d6;
+    --chip: #102b3f;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "IBM Plex Sans KR", sans-serif;
+    color: var(--text);
+    background: linear-gradient(130deg, #f3e5d6 0%, #f7f0e8 45%, #efe3d6 100%);
+}
+
+.bg-layer {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+            radial-gradient(700px 300px at 10% 0%, rgba(224, 89, 45, 0.13), transparent 65%),
+            radial-gradient(500px 280px at 90% 100%, rgba(16, 43, 63, 0.16), transparent 70%);
+}
+
+.shell {
+    position: relative;
+    max-width: 1024px;
+    margin: 0 auto;
+    padding: 28px 16px 36px;
+}
+
+.card {
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--card);
+    box-shadow: 0 14px 40px rgba(31, 26, 21, 0.08);
+}
+
+.hidden {
+    display: none !important;
+}
+
+.eyebrow {
+    margin: 0 0 8px;
+    letter-spacing: 0.12em;
+    font-size: 0.74rem;
+    color: var(--muted);
+    font-family: "Space Grotesk", sans-serif;
+}
+
+.auth-view {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    align-items: start;
+}
+
+.auth-copy {
+    padding: 16px 8px;
+}
+
+.auth-copy h1 {
+    margin: 0 0 10px;
+    line-height: 1.2;
+    font-size: 1.8rem;
+    font-family: "Space Grotesk", "IBM Plex Sans KR", sans-serif;
+}
+
+.auth-copy p {
+    margin: 0;
+    color: var(--muted);
+}
+
+.auth-card {
+    padding: 18px;
+}
+
+.tab-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+}
+
+.tab-btn {
+    flex: 1;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--muted);
+    padding: 10px 12px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.tab-btn.active {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+}
+
+label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+}
+
+input {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 11px;
+    margin-bottom: 12px;
+    background: #fff;
+    color: var(--text);
+}
+
+button {
+    border: 0;
+    border-radius: 10px;
+    padding: 10px 14px;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+button:hover {
+    background: var(--accent-dark);
+}
+
+button.secondary {
+    background: var(--chip);
+}
+
+button.secondary:hover {
+    background: #0b2030;
+}
+
+.status {
+    min-height: 22px;
+    margin: 12px 0 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.status.error {
+    color: #b62323;
+}
+
+.app-view {
+    display: grid;
+    gap: 12px;
+}
+
+.topbar {
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.topbar h2 {
+    margin: 0;
+    font-family: "Space Grotesk", "IBM Plex Sans KR", sans-serif;
+}
+
+.topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-badge {
+    margin: 0;
+    border: 1px solid #c8d3de;
+    border-radius: 999px;
+    padding: 7px 12px;
+    background: #f2f7fb;
+    color: #264a67;
+    font-size: 0.82rem;
+}
+
+.section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.section-head h3 {
+    margin: 0;
+}
+
+.hint {
+    margin: 0 0 10px;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.account-actions {
+    margin-bottom: 10px;
+}
+
+.lecture-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+
+.lecture-item {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #d9c8b2;
+    border-radius: 18px;
+    padding: 0;
+    background: linear-gradient(155deg, #fffdf9 0%, #fff7ed 100%);
+    box-shadow: 0 14px 34px rgba(40, 29, 16, 0.09);
+    overflow: hidden;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.lecture-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 38px rgba(40, 29, 16, 0.14);
+}
+
+.lecture-thumb {
+    width: 100%;
+    height: 210px;
+    object-fit: cover;
+    border-radius: 0;
+    border: 0;
+    flex-shrink: 0;
+    background: #f2e8dd;
+}
+
+.lecture-thumb-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #5d4934;
+    font-size: 0.86rem;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    background:
+            linear-gradient(145deg, #efdcc5 0%, #f6ecdf 60%, #e5d6c6 100%);
+}
+
+.lecture-content {
+    padding: 14px 15px 16px;
+    min-height: 120px;
+}
+
+.lecture-title {
+    display: block;
+    font-weight: 700;
+    font-size: 1.07rem;
+    line-height: 1.34;
+    letter-spacing: -0.01em;
+}
+
+.lecture-link {
+    color: #fff;
+    background: var(--accent-dark);
+    text-decoration: none;
+    font-weight: 700;
+    white-space: nowrap;
+    padding: 8px 13px;
+    border-radius: 10px;
+    border: 1px solid #b84422;
+    font-size: 0.86rem;
+}
+
+.lecture-link:hover {
+    background: #a73818;
+}
+
+.lecture-empty {
+    border: 1px dashed var(--line);
+    border-radius: 12px;
+    padding: 11px 12px;
+    color: var(--muted);
+}
+
+.lecture-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+
+.lecture-delete {
+    background: #f8d7cf;
+    color: #8e2310;
+    border: 1px solid #e7b9ab;
+    padding: 8px 10px;
+}
+
+.lecture-delete:hover {
+    background: #f2c4b6;
+}
+
+.lecture-crypto {
+    background: #d8e8f5;
+    color: #1f4967;
+    border: 1px solid #b8d2e7;
+    padding: 8px 10px;
+}
+
+.lecture-crypto:hover {
+    background: #c9deef;
+}
+
+.output {
+    margin: 10px 0 0;
+    min-height: 54px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fdf9f2;
+    padding: 10px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 0.84rem;
+}
+
+.output.pending {
+    border-color: #debb8a;
+    background: #fff5e7;
+    color: #734d1f;
+}
+
+.output.success {
+    border-color: #b7d8b9;
+    background: #ecf9ee;
+    color: #1f5c2c;
+}
+
+.output.error {
+    border-color: #e0b1b1;
+    background: #fff0f0;
+    color: #8d1f1f;
+}
+
+.static-label {
+    color: var(--muted);
+    font-size: 0.82rem;
+}
+
+.static-label strong {
+    color: #374a5f;
+    font-weight: 600;
+}
+
+#app-view > .card {
+    padding: 14px;
+}
+
+@media (min-width: 900px) {
+    .shell {
+        padding-top: 34px;
+    }
+
+    .lecture-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    .lecture-thumb {
+        height: 190px;
+    }
+
+    .auth-view {
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 22px;
+        min-height: 70vh;
+        align-items: center;
+    }
+
+    .auth-copy h1 {
+        font-size: 2.35rem;
+    }
+}

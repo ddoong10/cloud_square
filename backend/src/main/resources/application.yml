@@ -1,0 +1,55 @@
+spring:
+  application:
+    name: lms-backend
+  datasource:
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT:3306}/${DB_NAME}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  servlet:
+    multipart:
+      max-file-size: 1024MB
+      max-request-size: 1024MB
+
+server:
+  port: 8080
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    access-token-expiration-seconds: ${JWT_ACCESS_TOKEN_EXPIRATION_SECONDS:3600}
+  cors:
+    allowed-origin: ${CORS_ALLOWED_ORIGIN:https://lms.uoscholar-server.store} # TODO: add localhost origin for local frontend dev profile if needed
+  storage:
+    access-key: ${NCP_ACCESS_KEY}
+    secret-key: ${NCP_SECRET_KEY}
+    endpoint: ${NCP_S3_ENDPOINT}
+    bucket: ${NCP_BUCKET:lms-static}
+    region: ${NCP_S3_REGION}
+  kms:
+    enabled: ${KMS_ENABLED:false}
+    base-url: ${KMS_BASE_URL:https://ocapi.ncloud.com}
+    key-tag: ${KMS_KEY_TAG:}
+    access-key: ${KMS_ACCESS_KEY:${NCP_ACCESS_KEY:}}
+    secret-key: ${KMS_SECRET_KEY:${NCP_SECRET_KEY:}}
+    token-creator-id: ${KMS_TOKEN_CREATOR_ID:}
+  static-base-url: ${STATIC_BASE_URL:https://static.uoscholar-server.store}
+  demo:
+    user:
+      email: ${DEMO_USER_EMAIL:demo@lms.local}
+      password: ${DEMO_USER_PASSWORD:demo1234!}
+    admin:
+      email: ${DEMO_ADMIN_EMAIL:admin@lms.local}
+      password: ${DEMO_ADMIN_PASSWORD:admin1234!}
+
+logging:
+  level:
+    root: INFO
+    com.uos.lms: INFO
