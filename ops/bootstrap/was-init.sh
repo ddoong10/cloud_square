@@ -60,7 +60,7 @@ install_packages() {
   if command -v apt-get >/dev/null 2>&1; then
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -y
-    apt-get install -y curl tar awscli ca-certificates rsync
+    apt-get install -y curl tar ca-certificates rsync
     if ! command -v java >/dev/null 2>&1; then
       apt-get install -y openjdk-17-jre-headless
     fi
@@ -78,7 +78,32 @@ install_packages() {
   exit 1
 }
 
+ensure_aws_cli() {
+  if command -v aws >/dev/null 2>&1; then
+    return
+  fi
+
+  if command -v apt-get >/dev/null 2>&1; then
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get install -y awscli || true
+    if command -v aws >/dev/null 2>&1; then
+      return
+    fi
+
+    apt-get install -y python3-pip python3-venv || apt-get install -y python3-pip python3.12-venv
+    python3 -m venv /opt/lms/awscli-venv
+    /opt/lms/awscli-venv/bin/pip install --upgrade pip
+    /opt/lms/awscli-venv/bin/pip install awscli
+    ln -sf /opt/lms/awscli-venv/bin/aws /usr/local/bin/aws
+    return
+  fi
+
+  echo "ERROR: aws cli install failed"
+  exit 1
+}
+
 install_packages
+ensure_aws_cli
 
 if ! id lms >/dev/null 2>&1; then
   useradd --system --home-dir /opt/lms/backend --shell /sbin/nologin lms || true
@@ -242,7 +267,11 @@ EOF
 systemctl daemon-reload
 systemctl enable lms-backend
 
-/usr/local/bin/lms-was-sync.sh --force
+if /usr/local/bin/lms-was-sync.sh --force; then
+  echo "lms-was-init: initial sync succeeded"
+else
+  echo "WARNING: initial sync failed; timer will retry automatically"
+fi
 systemctl enable --now lms-was-sync.timer
 
 echo "lms-was-init: completed"
