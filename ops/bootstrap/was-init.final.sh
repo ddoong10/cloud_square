@@ -102,8 +102,16 @@ ensure_aws_cli() {
   exit 1
 }
 
+configure_aws_cli_ncp() {
+  aws configure set default.region "${NCP_S3_REGION}"
+  aws configure set default.s3.signature_version s3v4
+  aws configure set default.s3.addressing_style path
+  aws configure set default.s3.payload_signing_enabled false
+}
+
 install_packages
 ensure_aws_cli
+configure_aws_cli_ncp
 
 if ! id lms >/dev/null 2>&1; then
   useradd --system --home-dir /opt/lms/backend --shell /sbin/nologin lms || true
