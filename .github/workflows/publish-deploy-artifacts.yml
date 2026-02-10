@@ -21,113 +21,32 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
       - name: Build deploy artifacts
         run: |
           chmod +x backend/gradlew
           chmod +x scripts/package-deploy.sh
           ./scripts/package-deploy.sh
 
-      - name: Install AWS CLI
+      - name: Install AWS SDK for JavaScript v2.348.0
         run: |
-          if ! command -v aws >/dev/null 2>&1; then
-            sudo apt-get update
-            sudo apt-get install -y awscli
-          fi
-          aws --version
-
-      - name: Configure AWS CLI for NCP S3 compatibility
-        env:
-          AWS_DEFAULT_REGION: ${{ secrets.NCP_S3_REGION }}
-        run: |
-          set -euo pipefail
-          : "${AWS_DEFAULT_REGION:?NCP_S3_REGION is required}"
-          aws configure set default.region "${AWS_DEFAULT_REGION}"
-          aws configure set default.s3.signature_version s3v4
-          aws configure set default.s3.addressing_style path
-          aws configure set default.s3.payload_signing_enabled false
-          aws configure set default.s3.max_concurrent_requests 10
-
-      - name: Verify deploy object write/delete permission
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.NCP_DEPLOY_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.NCP_DEPLOY_SECRET_KEY }}
-          AWS_DEFAULT_REGION: ${{ secrets.NCP_S3_REGION }}
-          NCP_S3_ENDPOINT: ${{ secrets.NCP_S3_ENDPOINT }}
-          DEPLOY_BUCKET: ${{ secrets.NCP_DEPLOY_BUCKET }}
-          DEPLOY_PREFIX: ${{ secrets.NCP_DEPLOY_PREFIX }}
-          GITHUB_RUN_ID: ${{ github.run_id }}
-        run: |
-          set -euo pipefail
-          : "${AWS_ACCESS_KEY_ID:?NCP_DEPLOY_ACCESS_KEY is required}"
-          : "${AWS_SECRET_ACCESS_KEY:?NCP_DEPLOY_SECRET_KEY is required}"
-          : "${AWS_DEFAULT_REGION:?NCP_S3_REGION is required}"
-          : "${NCP_S3_ENDPOINT:?NCP_S3_ENDPOINT is required}"
-          : "${DEPLOY_BUCKET:?NCP_DEPLOY_BUCKET is required}"
-          DEPLOY_PREFIX="${DEPLOY_PREFIX:-uploads/lms-deploy}"
-          CHECK_KEY="${DEPLOY_PREFIX}/_checks/write-check-${GITHUB_RUN_ID}.txt"
-          printf "ok\n" > write-check.txt
-
-          aws --endpoint-url "${NCP_S3_ENDPOINT}" --region "${AWS_DEFAULT_REGION}" \
-            s3api put-object --bucket "${DEPLOY_BUCKET}" --key "${CHECK_KEY}" --body write-check.txt
-          aws --endpoint-url "${NCP_S3_ENDPOINT}" --region "${AWS_DEFAULT_REGION}" \
-            s3api delete-object --bucket "${DEPLOY_BUCKET}" --key "${CHECK_KEY}"
+          npm install --no-save aws-sdk@2.348.0
 
       - name: Publish to NCP Object Storage
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.NCP_DEPLOY_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.NCP_DEPLOY_SECRET_KEY }}
-          AWS_DEFAULT_REGION: ${{ secrets.NCP_S3_REGION }}
+          NCP_DEPLOY_ACCESS_KEY: ${{ secrets.NCP_DEPLOY_ACCESS_KEY }}
+          NCP_DEPLOY_SECRET_KEY: ${{ secrets.NCP_DEPLOY_SECRET_KEY }}
+          NCP_S3_REGION: ${{ secrets.NCP_S3_REGION }}
           NCP_S3_ENDPOINT: ${{ secrets.NCP_S3_ENDPOINT }}
-          DEPLOY_BUCKET: ${{ secrets.NCP_DEPLOY_BUCKET }}
-          DEPLOY_PREFIX: ${{ secrets.NCP_DEPLOY_PREFIX }}
+          NCP_DEPLOY_BUCKET: ${{ secrets.NCP_DEPLOY_BUCKET }}
+          NCP_DEPLOY_PREFIX: ${{ secrets.NCP_DEPLOY_PREFIX }}
           GIT_SHA: ${{ github.sha }}
         run: |
-          set -euo pipefail
-          : "${AWS_ACCESS_KEY_ID:?NCP_DEPLOY_ACCESS_KEY is required}"
-          : "${AWS_SECRET_ACCESS_KEY:?NCP_DEPLOY_SECRET_KEY is required}"
-          : "${AWS_DEFAULT_REGION:?NCP_S3_REGION is required}"
-          : "${NCP_S3_ENDPOINT:?NCP_S3_ENDPOINT is required}"
-          : "${DEPLOY_BUCKET:?NCP_DEPLOY_BUCKET is required}"
-          DEPLOY_PREFIX="${DEPLOY_PREFIX:-uploads/lms-deploy}"
-          VERSION="${GIT_SHA:0:12}"
-          UTC_NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-
-          WEB_RELEASE_KEY="${DEPLOY_PREFIX}/web/releases/${VERSION}/lms-web-deploy.tar.gz"
-          WAS_RELEASE_KEY="${DEPLOY_PREFIX}/was/releases/${VERSION}/lms-was-deploy.tar.gz"
-          WEB_LATEST_KEY="${DEPLOY_PREFIX}/web/latest/lms-web-deploy.tar.gz"
-          WAS_LATEST_KEY="${DEPLOY_PREFIX}/was/latest/lms-was-deploy.tar.gz"
-          WEB_VERSION_KEY="${DEPLOY_PREFIX}/web/latest/version.txt"
-          WAS_VERSION_KEY="${DEPLOY_PREFIX}/was/latest/version.txt"
-          WEB_META_KEY="${DEPLOY_PREFIX}/web/latest/metadata.json"
-          WAS_META_KEY="${DEPLOY_PREFIX}/was/latest/metadata.json"
-
-          aws --endpoint-url "${NCP_S3_ENDPOINT}" --region "${AWS_DEFAULT_REGION}" \
-            s3 cp dist/lms-web-deploy.tar.gz "s3://${DEPLOY_BUCKET}/${WEB_RELEASE_KEY}"
-          aws --endpoint-url "${NCP_S3_ENDPOINT}" --region "${AWS_DEFAULT_REGION}" \
-            s3 cp dist/lms-was-deploy.tar.gz "s3://${DEPLOY_BUCKET}/${WAS_RELEASE_KEY}"
-
-          aws --endpoint-url "${NCP_S3_ENDPOINT}" --region "${AWS_DEFAULT_REGION}" \
-            s3 cp dist/lms-web-deploy.tar.gz "s3://${DEPLOY_BUCKET}/${WEB_LATEST_KEY}"
-          aws --endpoint-url "${NCP_S3_ENDPOINT}" --region "${AWS_DEFAULT_REGION}" \
-            s3 cp dist/lms-was-deploy.tar.gz "s3://${DEPLOY_BUCKET}/${WAS_LATEST_KEY}"
-
-          printf "%s\n" "${VERSION}" > web-version.txt
-          printf "%s\n" "${VERSION}" > was-version.txt
-          cat > web-metadata.json <<EOF
-          {"version":"${VERSION}","publishedAt":"${UTC_NOW}","artifact":"${WEB_RELEASE_KEY}"}
-          EOF
-          cat > was-metadata.json <<EOF
-          {"version":"${VERSION}","publishedAt":"${UTC_NOW}","artifact":"${WAS_RELEASE_KEY}"}
-          EOF
-
-          aws --endpoint-url "${NCP_S3_ENDPOINT}" --region "${AWS_DEFAULT_REGION}" \
-            s3 cp web-version.txt "s3://${DEPLOY_BUCKET}/${WEB_VERSION_KEY}"
-          aws --endpoint-url "${NCP_S3_ENDPOINT}" --region "${AWS_DEFAULT_REGION}" \
-            s3 cp was-version.txt "s3://${DEPLOY_BUCKET}/${WAS_VERSION_KEY}"
-          aws --endpoint-url "${NCP_S3_ENDPOINT}" --region "${AWS_DEFAULT_REGION}" \
-            s3 cp web-metadata.json "s3://${DEPLOY_BUCKET}/${WEB_META_KEY}"
-          aws --endpoint-url "${NCP_S3_ENDPOINT}" --region "${AWS_DEFAULT_REGION}" \
-            s3 cp was-metadata.json "s3://${DEPLOY_BUCKET}/${WAS_META_KEY}"
+          node scripts/upload-to-ncp-s3.js
 
       - name: Upload artifacts to GitHub (optional)
         uses: actions/upload-artifact@v4

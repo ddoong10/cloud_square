@@ -272,7 +272,7 @@ python3 -m http.server 5500
 워크플로 동작:
 1. `scripts/package-deploy.sh` 실행
 2. `dist/lms-web-deploy.tar.gz`, `dist/lms-was-deploy.tar.gz` 생성
-3. Object Storage `latest/` + `releases/<sha>/` 경로로 업로드
+3. AWS SDK for JavaScript `2.348.0` 기반으로 Object Storage `latest/` + `releases/<sha>/` 경로 업로드
 
 ### 9-2. Launch Template UserData 적용
 
