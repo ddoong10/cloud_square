@@ -12,12 +12,18 @@
             const courseId = params.courseId;
             const lectureId = params.lectureId;
 
-            const [course, lectures, resume, streamInfo] = await Promise.all([
+            const [course, lectures, resume] = await Promise.all([
                 window.Api.getCourse(courseId),
                 window.Api.getLectures(courseId),
-                window.Api.getResume(lectureId),
-                window.Api.getStreamUrl(lectureId)
+                window.Api.getResume(lectureId)
             ]);
+
+            let streamInfo = null;
+            try {
+                streamInfo = await window.Api.getStreamUrl(lectureId);
+            } catch (streamErr) {
+                console.warn("Stream URL 조회 실패:", streamErr.message);
+            }
 
             const currentLecture = lectures.find(l => l.id == lectureId);
             if (!currentLecture) throw new Error("강의를 찾을 수 없습니다.");
@@ -80,9 +86,14 @@
 
             // Setup HLS player
             const video = document.getElementById("hls-player");
-            const videoSrc = streamInfo.url;
+            const videoSrc = streamInfo ? streamInfo.url : null;
 
-            if (videoSrc && streamInfo.type === "hls" && window.Hls && Hls.isSupported()) {
+            if (!videoSrc) {
+                const wrapper = document.querySelector(".player-wrapper");
+                if (wrapper) {
+                    wrapper.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#888;font-size:1.1rem;">영상이 준비 중이거나 접근 권한이 없습니다.</div>';
+                }
+            } else if (videoSrc && streamInfo.type === "hls" && window.Hls && Hls.isSupported()) {
                 const hls = new Hls();
                 hls.loadSource(videoSrc);
                 hls.attachMedia(video);

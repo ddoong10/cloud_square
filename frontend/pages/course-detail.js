@@ -74,11 +74,16 @@
             const enrollBtn = document.getElementById("enroll-btn");
             if (enrollBtn) {
                 enrollBtn.addEventListener("click", async () => {
+                    enrollBtn.disabled = true;
+                    enrollBtn.textContent = "수강 신청 중...";
                     try {
                         await window.Api.enroll(courseId);
-                        window.Router.navigate("/courses/" + courseId);
+                        alert("수강 신청이 완료되었습니다!");
+                        window.Pages.courseDetail({ id: courseId });
                     } catch (err) {
                         alert("수강 신청 실패: " + err.message);
+                        enrollBtn.disabled = false;
+                        enrollBtn.textContent = "수강 신청";
                     }
                 });
             }
