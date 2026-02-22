@@ -30,7 +30,7 @@ public class LectureController {
     }
 
     @PutMapping("/{lectureId}")
-    public LectureResponse update(@PathVariable Long lectureId, @RequestBody LectureUpdateRequest request) {
+    public LectureResponse update(@PathVariable Long lectureId, @Valid @RequestBody LectureUpdateRequest request) {
         return lectureService.update(lectureId, request);
     }
 

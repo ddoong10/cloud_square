@@ -12,8 +12,7 @@ import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType0Font;
-import org.apache.pdfbox.pdmodel.font.PDType1Font;
-import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
+// Helvetica fallback removed - fail-fast if Korean fonts missing
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.springframework.stereotype.Component;
 
@@ -46,9 +45,8 @@ public class CertificatePdfGenerator {
                     fontBold = PDType0Font.load(document, boldStream);
                     fontRegular = PDType0Font.load(document, regularStream);
                 } else {
-                    log.warn("Korean font files not found, falling back to Helvetica");
-                    fontBold = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
-                    fontRegular = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+                    throw new IllegalStateException("Korean font files (NanumGothic) not found in classpath. "
+                            + "Certificates cannot be generated without Korean font support.");
                 }
             }
 

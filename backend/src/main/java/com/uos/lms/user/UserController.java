@@ -7,6 +7,7 @@ import com.uos.lms.enrollment.EnrollmentStatus;
 import com.uos.lms.kms.EnvelopeEncryptionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -34,6 +35,7 @@ public class UserController {
     }
 
     @GetMapping("/admin/stats")
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public AdminStatsResponse adminStats() {
         long totalUsers = userRepository.count();
         long totalCourses = courseRepository.count();
@@ -83,10 +85,11 @@ public class UserController {
     }
 
     @PutMapping("/me/password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void changePassword(@Valid @RequestBody ChangePasswordRequest request, Authentication authentication) {
         User user = getCurrentUser(authentication);
         if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
-            throw new BadCredentialsException("현재 비밀번호가 일치하지 않습니다.");
+            throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
         }
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
