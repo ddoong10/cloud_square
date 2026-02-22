@@ -88,6 +88,11 @@
             const video = document.getElementById("hls-player");
             const videoSrc = streamInfo ? streamInfo.url : null;
 
+            // Track furthest watched position for seek prevention
+            let maxWatchedPosition = resume.lastPosition || 0;
+            const isCompleted = resume.completed;
+            const MAX_SPEED = 2.0;
+
             if (!videoSrc) {
                 const wrapper = document.querySelector(".player-wrapper");
                 if (wrapper) {
@@ -112,9 +117,31 @@
                 });
             }
 
-            // Speed controls
-            const speeds = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2.0];
-            let currentSpeedIdx = 2;
+            // Seek prevention: only allow seeking up to maxWatchedPosition
+            if (!isCompleted) {
+                let isSeeking = false;
+                video.addEventListener("seeking", () => {
+                    if (isSeeking) return;
+                    if (video.currentTime > maxWatchedPosition + 2) {
+                        isSeeking = true;
+                        video.currentTime = maxWatchedPosition;
+                        isSeeking = false;
+                    }
+                });
+
+                video.addEventListener("timeupdate", () => {
+                    if (video.currentTime > maxWatchedPosition) {
+                        maxWatchedPosition = video.currentTime;
+                    }
+                });
+            }
+
+            // Speed limit: max 2x
+            video.addEventListener("ratechange", () => {
+                if (video.playbackRate > MAX_SPEED) {
+                    video.playbackRate = MAX_SPEED;
+                }
+            });
 
             // Heartbeat every 30 seconds
             heartbeatInterval = setInterval(async () => {
