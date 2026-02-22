@@ -24,6 +24,16 @@ public class DataMigrationRunner implements CommandLineRunner {
 
     private void migrateUserRoles() {
         try {
+            // MySQL ENUM 타입인 경우 새 값을 허용하도록 VARCHAR로 변환
+            jdbcTemplate.execute(
+                    "ALTER TABLE users MODIFY COLUMN role VARCHAR(20) NOT NULL"
+            );
+            log.info("Altered role column to VARCHAR(20)");
+        } catch (Exception e) {
+            log.debug("Column type alter skipped (may already be VARCHAR): {}", e.getMessage());
+        }
+
+        try {
             int updated = jdbcTemplate.update(
                     "UPDATE users SET role = 'STUDENT' WHERE role = 'USER'"
             );
