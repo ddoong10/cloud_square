@@ -17,17 +17,18 @@
             </div>
             <table class="admin-table">
                 <thead>
-                    <tr><th>ID</th><th>제목</th><th>카테고리</th><th>강의수</th><th>공개</th><th>관리</th></tr>
+                    <tr><th>ID</th><th>썸네일</th><th>제목</th><th>카테고리</th><th>강의수</th><th>공개</th><th>관리</th></tr>
                 </thead>
                 <tbody>`;
 
             if (courses.length === 0) {
-                html += '<tr><td colspan="6" class="text-muted">등록된 과정이 없습니다.</td></tr>';
+                html += '<tr><td colspan="7" class="text-muted">등록된 과정이 없습니다.</td></tr>';
             } else {
                 courses.forEach(c => {
                     html += `
                     <tr>
                         <td>${c.id}</td>
+                        <td>${c.thumbnailUrl ? '<img src="' + c.thumbnailUrl + '" style="width:48px;height:32px;object-fit:cover;border-radius:4px">' : '<span class="text-muted">-</span>'}</td>
                         <td>${Components.escapeHtml(c.title)}</td>
                         <td>${Components.escapeHtml(c.category || '-')}</td>
                         <td>${c.lectureCount}</td>
@@ -54,8 +55,8 @@
                         <input name="category" maxlength="100" />
                         <label>이수 기준 (%)</label>
                         <input name="passCriteria" type="number" value="80" min="1" max="100" />
-                        <label>썸네일 URL</label>
-                        <input name="thumbnailUrl" maxlength="2048" />
+                        <label>썸네일 이미지</label>
+                        <input name="thumbnail" type="file" accept="image/*" />
                         <button type="submit" class="btn btn-primary" style="margin-top:12px">생성</button>
                     </form>
                 `);
@@ -63,18 +64,31 @@
                 document.getElementById("create-course-form").addEventListener("submit", async (e) => {
                     e.preventDefault();
                     const form = e.target;
+                    const submitBtn = form.querySelector("button[type=submit]");
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = "생성 중...";
+
                     try {
+                        let thumbnailUrl = null;
+                        if (form.thumbnail.files.length > 0) {
+                            submitBtn.textContent = "썸네일 업로드 중...";
+                            const thumbUpload = await window.Api.upload(form.thumbnail.files[0]);
+                            thumbnailUrl = thumbUpload.url;
+                        }
+
                         await window.Api.createCourse({
                             title: form.title.value,
                             description: form.description.value || null,
                             category: form.category.value || null,
                             passCriteria: parseInt(form.passCriteria.value) || 80,
-                            thumbnailUrl: form.thumbnailUrl.value || null
+                            thumbnailUrl: thumbnailUrl
                         });
                         document.querySelector(".modal-overlay").remove();
                         window.Pages.admin.courses();
                     } catch (err) {
                         alert("생성 실패: " + err.message);
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = "생성";
                     }
                 });
             });
