@@ -141,6 +141,12 @@
             return request("/api/uploads", { method: "POST", body: formData });
         },
 
+        async uploadVod(file) {
+            const formData = new FormData();
+            formData.append("file", file);
+            return request("/api/uploads/vod", { method: "POST", body: formData });
+        },
+
         // Enrollment
         async enroll(courseId) {
             return request("/api/courses/" + courseId + "/enroll", { method: "POST" });
@@ -186,6 +192,11 @@
 
         getCertificatePdfUrl(certNumber) {
             return API_BASE_URL + "/api/certificates/" + certNumber + "/pdf";
+        },
+
+        // Admin
+        async getAdminUsers() {
+            return request("/api/admin/users", { method: "GET" });
         }
     };
 })();

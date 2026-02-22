@@ -1,14 +1,19 @@
 package com.uos.lms.course;
 
+import com.uos.lms.certificate.CertificateRepository;
+import com.uos.lms.enrollment.EnrollmentRepository;
 import com.uos.lms.lecture.LectureRepository;
+import com.uos.lms.progress.LectureProgressRepository;
 import com.uos.lms.user.User;
 import com.uos.lms.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CourseService {
@@ -16,6 +21,9 @@ public class CourseService {
     private final CourseRepository courseRepository;
     private final UserRepository userRepository;
     private final LectureRepository lectureRepository;
+    private final EnrollmentRepository enrollmentRepository;
+    private final CertificateRepository certificateRepository;
+    private final LectureProgressRepository lectureProgressRepository;
 
     @Transactional(readOnly = true)
     public List<CourseResponse> listPublished() {
@@ -101,7 +109,23 @@ public class CourseService {
     public void delete(Long courseId) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Course not found: " + courseId));
+
+        // Delete related records in correct order to avoid FK violations
+        List<Long> lectureIds = lectureRepository.findByCourseIdOrderBySortOrderAsc(courseId).stream()
+                .map(l -> l.getId())
+                .toList();
+
+        if (!lectureIds.isEmpty()) {
+            lectureProgressRepository.deleteByLectureIdIn(lectureIds);
+            log.info("Deleted lecture progress for {} lectures in course {}", lectureIds.size(), courseId);
+        }
+
+        certificateRepository.deleteByCourseId(courseId);
+        enrollmentRepository.deleteByCourseId(courseId);
+        lectureRepository.deleteByCourseId(courseId);
         courseRepository.delete(course);
+
+        log.info("Deleted course {} and all related records", courseId);
     }
 
     private CourseResponse toResponse(Course course) {

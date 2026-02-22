@@ -529,6 +529,48 @@ button:hover, .btn:hover { background: var(--accent-dark); }
 .admin-status.success { display: block; background: var(--success-bg); color: var(--success); border: 1px solid #b7d8b9; }
 .admin-status.error { display: block; background: var(--danger-bg); color: var(--danger); border: 1px solid #e0b1b1; }
 
+/* ── Upload Progress ── */
+.upload-progress {
+    margin: 8px 0 12px;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.upload-progress-bar {
+    height: 6px;
+    background: var(--bg-soft);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.upload-progress-fill {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, var(--accent) 0%, #f0764f 100%);
+    border-radius: 3px;
+    animation: progress-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes progress-pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+}
+
+/* ── VOD Badge ── */
+.vod-badge {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.vod-badge-hls { background: #e8f5e9; color: #2e7d32; }
+.vod-badge-mp4 { background: #e3f2fd; color: #1565c0; }
+.vod-badge-none { background: #fafafa; color: #999; }
+
 /* ── Home Sections ── */
 .home-section { margin-bottom: 28px; }
 .home-section h2 { margin: 0 0 14px; font-size: 1.15rem; }

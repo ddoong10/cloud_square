@@ -21,4 +21,9 @@ public class UploadController {
     public UploadResponse upload(@RequestParam("file") MultipartFile file) {
         return uploadService.upload(file);
     }
+
+    @PostMapping(value = "/vod", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public VodUploadResponse uploadVod(@RequestParam("file") MultipartFile file) {
+        return uploadService.uploadVod(file);
+    }
 }

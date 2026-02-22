@@ -45,8 +45,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
                         // Certificate verification (public)
                         .requestMatchers(HttpMethod.GET, "/api/certificates/*/verify").permitAll()
-                        // Admin-only: uploads
-                        .requestMatchers(HttpMethod.POST, "/api/uploads").hasRole("ADMIN")
+                        // Uploads: admin and instructor
+                        .requestMatchers(HttpMethod.POST, "/api/uploads").hasAnyRole("ADMIN", "INSTRUCTOR")
+                        .requestMatchers(HttpMethod.POST, "/api/uploads/vod").hasAnyRole("ADMIN", "INSTRUCTOR")
                         // Admin/Instructor: lecture management
                         .requestMatchers(HttpMethod.POST, "/api/lectures").hasAnyRole("ADMIN", "INSTRUCTOR")
                         .requestMatchers(HttpMethod.POST, "/api/lectures/sync").hasRole("ADMIN")
@@ -56,6 +57,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/courses").hasAnyRole("ADMIN", "INSTRUCTOR")
                         .requestMatchers(HttpMethod.PUT, "/api/courses/*").hasAnyRole("ADMIN", "INSTRUCTOR")
                         .requestMatchers(HttpMethod.DELETE, "/api/courses/*").hasAnyRole("ADMIN", "INSTRUCTOR")
+                        // Admin: user management
+                        .requestMatchers(HttpMethod.GET, "/api/admin/users").hasRole("ADMIN")
                         // Student: enrollment
                         .requestMatchers(HttpMethod.POST, "/api/courses/*/enroll").hasRole("STUDENT")
                         // All authenticated

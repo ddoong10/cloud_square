@@ -15,4 +15,6 @@ public interface LectureRepository extends JpaRepository<Lecture, Long> {
     boolean existsByVideoUrl(String videoUrl);
 
     boolean existsByVideoUrlHash(String videoUrlHash);
+
+    void deleteByCourseId(Long courseId);
 }

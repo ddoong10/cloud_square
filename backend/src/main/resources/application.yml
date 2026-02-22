@@ -43,6 +43,7 @@ app:
   static-base-url: ${STATIC_BASE_URL:https://static.uoscholar-server.store}
   vod:
     base-url: ${VOD_BASE_URL:https://vod.uoscholar-server.store}
+    input-bucket: ${VOD_INPUT_BUCKET:lms-vod-input}
   certificate:
     verification-base-url: ${CERT_VERIFICATION_BASE_URL:https://lms.uoscholar-server.store/#/verify}
   demo:

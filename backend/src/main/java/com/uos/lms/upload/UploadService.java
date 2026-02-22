@@ -28,6 +28,53 @@ public class UploadService {
     @Value("${app.static-base-url}")
     private String staticBaseUrl;
 
+    @Value("${app.vod.base-url}")
+    private String vodBaseUrl;
+
+    @Value("${app.vod.input-bucket}")
+    private String vodInputBucket;
+
+    public VodUploadResponse uploadVod(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Video file is required");
+        }
+
+        String uuid = UUID.randomUUID().toString();
+        String safeFilename = sanitizeFilename(file.getOriginalFilename());
+        String key = "videos/" + uuid + "/" + safeFilename;
+
+        try (InputStream inputStream = file.getInputStream()) {
+            ObjectMetadata metadata = new ObjectMetadata();
+            metadata.setContentLength(file.getSize());
+            metadata.setContentType(file.getContentType());
+
+            PutObjectRequest request = new PutObjectRequest(
+                    vodInputBucket,
+                    key,
+                    inputStream,
+                    metadata
+            );
+
+            amazonS3.putObject(request);
+        } catch (IOException exception) {
+            throw new IllegalStateException("Failed to upload VOD file", exception);
+        }
+
+        String stem = key.contains(".") ? key.substring(0, key.lastIndexOf('.')) : key;
+        String normalizedVodBase = vodBaseUrl.endsWith("/")
+                ? vodBaseUrl.substring(0, vodBaseUrl.length() - 1)
+                : vodBaseUrl;
+        String vodUrl = normalizedVodBase + "/" + stem + "/index.m3u8";
+
+        String endpoint = storageProperties.getEndpoint().endsWith("/")
+                ? storageProperties.getEndpoint().substring(0, storageProperties.getEndpoint().length() - 1)
+                : storageProperties.getEndpoint();
+        String sourceUrl = endpoint + "/" + vodInputBucket + "/" + key;
+
+        log.info("VOD uploaded: key={}, vodUrl={}, size={} bytes", key, vodUrl, file.getSize());
+        return new VodUploadResponse(key, vodUrl, sourceUrl);
+    }
+
     public UploadResponse upload(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File is required");

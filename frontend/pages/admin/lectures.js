@@ -24,18 +24,22 @@
             <div id="admin-status" class="admin-status"></div>
             <table class="admin-table">
                 <thead>
-                    <tr><th>ID</th><th>제목</th><th>과정</th><th>시간</th><th>순서</th><th>관리</th></tr>
+                    <tr><th>ID</th><th>제목</th><th>과정</th><th>유형</th><th>시간</th><th>순서</th><th>관리</th></tr>
                 </thead>
                 <tbody>`;
 
             lectures.forEach(l => {
                 const courseName = courses.find(c => c.id === l.courseId)?.title || '-';
                 const duration = l.durationSeconds ? Math.floor(l.durationSeconds / 60) + "분" : '-';
+                const vodBadge = l.vodUrl
+                    ? '<span class="vod-badge vod-badge-hls">HLS</span>'
+                    : (l.videoUrl ? '<span class="vod-badge vod-badge-mp4">MP4</span>' : '<span class="vod-badge vod-badge-none">없음</span>');
                 html += `
                 <tr>
                     <td>${l.id}</td>
                     <td>${Components.escapeHtml(l.title)}</td>
                     <td>${Components.escapeHtml(courseName)}</td>
+                    <td>${vodBadge}</td>
                     <td>${duration}</td>
                     <td>${l.sortOrder != null ? l.sortOrder : '-'}</td>
                     <td>
@@ -73,8 +77,12 @@
                         <input name="title" required maxlength="255" />
                         <label>과정</label>
                         <select name="courseId"><option value="">선택 안 함</option>${courseOptions}</select>
-                        <label>영상 파일 *</label>
+                        <label>영상 파일 * (VOD Station으로 HLS 변환)</label>
                         <input name="file" type="file" accept="video/*" required />
+                        <div id="upload-progress" class="upload-progress hidden">
+                            <div class="upload-progress-bar"><div class="upload-progress-fill" id="progress-fill"></div></div>
+                            <span id="upload-status">업로드 준비 중...</span>
+                        </div>
                         <label>썸네일 (선택)</label>
                         <input name="thumbnail" type="file" accept="image/*" />
                         <label>설명</label>
@@ -94,17 +102,29 @@
                     submitBtn.disabled = true;
                     submitBtn.textContent = "업로드 중...";
 
+                    const progressEl = document.getElementById("upload-progress");
+                    const statusEl = document.getElementById("upload-status");
+                    progressEl.classList.remove("hidden");
+
                     try {
-                        const videoUpload = await window.Api.upload(form.file.files[0]);
+                        // Upload video to VOD Station input bucket
+                        statusEl.textContent = "영상을 VOD Station에 업로드 중...";
+                        const vodUpload = await window.Api.uploadVod(form.file.files[0]);
+                        statusEl.textContent = "영상 업로드 완료. HLS 변환이 자동으로 진행됩니다.";
+
+                        // Upload thumbnail to static bucket
                         let thumbnailUrl = null;
                         if (form.thumbnail.files.length > 0) {
+                            statusEl.textContent = "썸네일 업로드 중...";
                             const thumbUpload = await window.Api.upload(form.thumbnail.files[0]);
                             thumbnailUrl = thumbUpload.url;
                         }
 
+                        statusEl.textContent = "강의 등록 중...";
                         await window.Api.createLecture({
                             title: form.title.value,
-                            videoUrl: videoUpload.url,
+                            videoUrl: vodUpload.sourceUrl,
+                            vodUrl: vodUpload.vodUrl,
                             thumbnailUrl: thumbnailUrl,
                             courseId: form.courseId.value ? parseInt(form.courseId.value) : null,
                             description: form.description.value || null,
@@ -118,6 +138,7 @@
                         alert("등록 실패: " + err.message);
                         submitBtn.disabled = false;
                         submitBtn.textContent = "업로드 + 등록";
+                        progressEl.classList.add("hidden");
                     }
                 });
             });
