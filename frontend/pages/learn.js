@@ -103,14 +103,17 @@
                 return;
             }
 
-            // Wait for DOM to fully render before initializing Video.js
-            await new Promise(function (resolve) { requestAnimationFrame(resolve); });
+            // Dispose any leftover Video.js instance with same ID
+            try {
+                var old = videojs.getPlayer("lms-player");
+                if (old) { old.dispose(); }
+            } catch (_) {}
 
-            // Dispose any leftover Video.js instance
-            var existingPlayer = document.getElementById("lms-player");
-            if (existingPlayer && existingPlayer.player) {
-                try { existingPlayer.player.dispose(); } catch (_) {}
-            }
+            // Wait for DOM to fully settle after cleanup
+            await new Promise(function (resolve) { setTimeout(resolve, 100); });
+
+            // Verify element exists after delay
+            if (!document.getElementById("lms-player")) return;
 
             // Initialize Video.js player
             player = videojs("lms-player", {
