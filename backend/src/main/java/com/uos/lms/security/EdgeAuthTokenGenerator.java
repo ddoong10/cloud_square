@@ -57,11 +57,24 @@ public class EdgeAuthTokenGenerator {
     private String hmacSha256Hex(String key, String data) {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
-            SecretKeySpec keySpec = new SecretKeySpec(
-                    key.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+            // NCP Edge Auth 키는 hex 인코딩된 바이너리 키
+            byte[] keyBytes = HexFormat.of().parseHex(key);
+            SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "HmacSHA256");
             mac.init(keySpec);
             byte[] rawHmac = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(rawHmac);
+        } catch (IllegalArgumentException e) {
+            // hex 파싱 실패 시 UTF-8 문자열로 폴백
+            try {
+                Mac mac2 = Mac.getInstance("HmacSHA256");
+                SecretKeySpec keySpec = new SecretKeySpec(
+                        key.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+                mac2.init(keySpec);
+                byte[] rawHmac = mac2.doFinal(data.getBytes(StandardCharsets.UTF_8));
+                return HexFormat.of().formatHex(rawHmac);
+            } catch (Exception ex) {
+                throw new IllegalStateException("HMAC-SHA256 computation failed", ex);
+            }
         } catch (Exception e) {
             throw new IllegalStateException("HMAC-SHA256 computation failed", e);
         }
