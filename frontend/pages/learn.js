@@ -130,6 +130,7 @@
                         "durationDisplay",
                         "progressControl",
                         "playbackRateMenuButton",
+                        "qualitySelector",
                         "volumePanel",
                         "fullscreenToggle"
                     ]
