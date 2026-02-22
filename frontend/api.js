@@ -194,8 +194,21 @@
             return request("/api/my-certificates", { method: "GET" });
         },
 
-        getCertificatePdfUrl(certNumber) {
-            return API_BASE_URL + "/api/certificates/" + certNumber + "/pdf";
+        async downloadCertificatePdf(certNumber) {
+            const token = localStorage.getItem("token");
+            const res = await fetch(API_BASE_URL + "/api/certificates/" + certNumber + "/pdf", {
+                headers: { "Authorization": "Bearer " + token }
+            });
+            if (!res.ok) throw new Error("PDF 다운로드 실패");
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = certNumber + ".pdf";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         },
 
         // Admin

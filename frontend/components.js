@@ -73,7 +73,7 @@
                     <p class="cert-number">${cert.certificateNumber}</p>
                 </div>
                 <div class="certificate-card-actions">
-                    <a href="${window.Api.getCertificatePdfUrl(cert.certificateNumber)}" target="_blank" class="btn btn-primary">PDF 다운로드</a>
+                    <button class="btn btn-primary" onclick="window.Api.downloadCertificatePdf('${cert.certificateNumber}')">PDF 다운로드</button>
                     <a href="#/verify/${cert.certificateNumber}" class="btn btn-secondary">진위 확인</a>
                 </div>
             </div>`;
