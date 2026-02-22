@@ -42,7 +42,8 @@ app:
     token-creator-id: ${KMS_TOKEN_CREATOR_ID:}
   static-base-url: ${STATIC_BASE_URL:https://static.uoscholar-server.store}
   vod:
-    base-url: ${VOD_BASE_URL:https://vod.uoscholar-server.store}
+    cdn-base-url: ${VOD_CDN_BASE_URL:https://TODO_VOD_CDN}
+    bucket-enc-name: ${VOD_BUCKET_ENC_NAME:TODO_VOD_BUCKET_ENC}
     input-bucket: ${VOD_INPUT_BUCKET:lms-vod-input}
   certificate:
     verification-base-url: ${CERT_VERIFICATION_BASE_URL:https://lms.uoscholar-server.store/#/verify}

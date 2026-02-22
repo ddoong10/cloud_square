@@ -5,11 +5,15 @@ import com.uos.lms.common.HashingUtils;
 import com.uos.lms.config.StorageProperties;
 import com.uos.lms.course.Course;
 import com.uos.lms.course.CourseRepository;
+import com.uos.lms.enrollment.EnrollmentRepository;
 import com.uos.lms.kms.EnvelopeEncryptionService;
+import com.uos.lms.user.UserRole;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,6 +26,7 @@ public class LectureService {
 
     private final LectureRepository lectureRepository;
     private final CourseRepository courseRepository;
+    private final EnrollmentRepository enrollmentRepository;
     private final ObjectProvider<AmazonS3> amazonS3Provider;
     private final ObjectProvider<StorageProperties> storagePropertiesProvider;
     private final EnvelopeEncryptionService envelopeEncryptionService;
@@ -39,8 +44,33 @@ public class LectureService {
 
     public List<LectureResponse> listByCourse(Long courseId) {
         return lectureRepository.findByCourseIdOrderBySortOrderAsc(courseId).stream()
-                .map(this::toResponseWithDecryption)
+                .map(this::toPublicResponse)
                 .toList();
+    }
+
+    public StreamUrlResponse getStreamUrl(Long lectureId, Long userId, Authentication authentication) {
+        Lecture lecture = lectureRepository.findById(lectureId)
+                .orElseThrow(() -> new IllegalArgumentException("Lecture not found: " + lectureId));
+
+        // Admin and instructor can access any lecture
+        boolean isPrivileged = authentication.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(a -> a.equals("ROLE_ADMIN") || a.equals("ROLE_INSTRUCTOR"));
+
+        if (!isPrivileged && lecture.getCourse() != null) {
+            Long courseId = lecture.getCourse().getId();
+            if (!enrollmentRepository.existsByUserIdAndCourseId(userId, courseId)) {
+                throw new IllegalStateException("수강 신청 후 시청할 수 있습니다.");
+            }
+        }
+
+        String vodUrl = lecture.getVodUrl();
+        if (vodUrl != null && !vodUrl.isBlank()) {
+            return new StreamUrlResponse(vodUrl, "hls");
+        }
+
+        String videoUrl = envelopeEncryptionService.decrypt(lecture.getVideoUrl());
+        return new StreamUrlResponse(videoUrl, "mp4");
     }
 
     public LectureResponse create(LectureCreateRequest request) {
@@ -125,6 +155,22 @@ public class LectureService {
                 lecture.getCourse() != null ? lecture.getCourse().getId() : null,
                 lecture.getDescription(),
                 lecture.getVodUrl(),
+                lecture.getDurationSeconds(),
+                lecture.getSortOrder(),
+                lecture.getResourceUrls()
+        );
+    }
+
+    private LectureResponse toPublicResponse(Lecture lecture) {
+        String decryptedThumbnailUrl = decryptIfEnvelope(lecture.getThumbnailUrl());
+        return new LectureResponse(
+                lecture.getId(),
+                lecture.getTitle(),
+                null,
+                decryptedThumbnailUrl,
+                lecture.getCourse() != null ? lecture.getCourse().getId() : null,
+                lecture.getDescription(),
+                null,
                 lecture.getDurationSeconds(),
                 lecture.getSortOrder(),
                 lecture.getResourceUrls()

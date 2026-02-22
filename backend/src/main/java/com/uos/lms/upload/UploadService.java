@@ -28,8 +28,11 @@ public class UploadService {
     @Value("${app.static-base-url}")
     private String staticBaseUrl;
 
-    @Value("${app.vod.base-url}")
-    private String vodBaseUrl;
+    @Value("${app.vod.cdn-base-url}")
+    private String vodCdnBaseUrl;
+
+    @Value("${app.vod.bucket-enc-name}")
+    private String vodBucketEncName;
 
     @Value("${app.vod.input-bucket}")
     private String vodInputBucket;
@@ -60,11 +63,12 @@ public class UploadService {
             throw new IllegalStateException("Failed to upload VOD file", exception);
         }
 
+        // HLS URL via VOD Station CDN
         String stem = key.contains(".") ? key.substring(0, key.lastIndexOf('.')) : key;
-        String normalizedVodBase = vodBaseUrl.endsWith("/")
-                ? vodBaseUrl.substring(0, vodBaseUrl.length() - 1)
-                : vodBaseUrl;
-        String vodUrl = normalizedVodBase + "/" + stem + "/index.m3u8";
+        String normalizedCdnBase = vodCdnBaseUrl.endsWith("/")
+                ? vodCdnBaseUrl.substring(0, vodCdnBaseUrl.length() - 1)
+                : vodCdnBaseUrl;
+        String vodUrl = normalizedCdnBase + "/hls/" + vodBucketEncName + "/" + stem + "/index.m3u8";
 
         String endpoint = storageProperties.getEndpoint().endsWith("/")
                 ? storageProperties.getEndpoint().substring(0, storageProperties.getEndpoint().length() - 1)

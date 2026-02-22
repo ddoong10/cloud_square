@@ -77,7 +77,7 @@
                         <input name="title" required maxlength="255" />
                         <label>과정</label>
                         <select name="courseId"><option value="">선택 안 함</option>${courseOptions}</select>
-                        <label>영상 파일 * (VOD Station으로 HLS 변환)</label>
+                        <label>영상 파일 *</label>
                         <input name="file" type="file" accept="video/*" required />
                         <div id="upload-progress" class="upload-progress hidden">
                             <div class="upload-progress-bar"><div class="upload-progress-fill" id="progress-fill"></div></div>
@@ -107,10 +107,10 @@
                     progressEl.classList.remove("hidden");
 
                     try {
-                        // Upload video to VOD Station input bucket
-                        statusEl.textContent = "영상을 VOD Station에 업로드 중...";
+                        // Upload video file
+                        statusEl.textContent = "영상 업로드 중...";
                         const vodUpload = await window.Api.uploadVod(form.file.files[0]);
-                        statusEl.textContent = "영상 업로드 완료. HLS 변환이 자동으로 진행됩니다.";
+                        statusEl.textContent = "영상 업로드 완료.";
 
                         // Upload thumbnail to static bucket
                         let thumbnailUrl = null;

@@ -3,6 +3,7 @@ package com.uos.lms.lecture;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -38,6 +39,12 @@ public class LectureController {
     @DeleteMapping("/{lectureId}")
     public LectureDeleteResponse delete(@PathVariable Long lectureId) {
         return lectureService.delete(lectureId);
+    }
+
+    @GetMapping("/{lectureId}/stream-url")
+    public StreamUrlResponse streamUrl(@PathVariable Long lectureId, Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getPrincipal().toString());
+        return lectureService.getStreamUrl(lectureId, userId, authentication);
     }
 
     @GetMapping("/{lectureId}/crypto-check")

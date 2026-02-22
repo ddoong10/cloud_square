@@ -12,10 +12,11 @@
             const courseId = params.courseId;
             const lectureId = params.lectureId;
 
-            const [course, lectures, resume] = await Promise.all([
+            const [course, lectures, resume, streamInfo] = await Promise.all([
                 window.Api.getCourse(courseId),
                 window.Api.getLectures(courseId),
-                window.Api.getResume(lectureId)
+                window.Api.getResume(lectureId),
+                window.Api.getStreamUrl(lectureId)
             ]);
 
             const currentLecture = lectures.find(l => l.id == lectureId);
@@ -79,9 +80,9 @@
 
             // Setup HLS player
             const video = document.getElementById("hls-player");
-            const videoSrc = currentLecture.vodUrl || currentLecture.videoUrl;
+            const videoSrc = streamInfo.url;
 
-            if (videoSrc && videoSrc.endsWith(".m3u8") && window.Hls && Hls.isSupported()) {
+            if (videoSrc && streamInfo.type === "hls" && window.Hls && Hls.isSupported()) {
                 const hls = new Hls();
                 hls.loadSource(videoSrc);
                 hls.attachMedia(video);

@@ -173,6 +173,10 @@
             return request("/api/lectures/" + lectureId + "/resume", { method: "GET" });
         },
 
+        async getStreamUrl(lectureId) {
+            return request("/api/lectures/" + lectureId + "/stream-url", { method: "GET" });
+        },
+
         // Certificates
         async issueCertificate(courseId) {
             return request("/api/courses/" + courseId + "/certificate", { method: "POST" });
