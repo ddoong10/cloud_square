@@ -12,6 +12,11 @@ NCP_DEPLOY_BUCKET="${NCP_DEPLOY_BUCKET:-TODO_DEPLOY_BUCKET}"
 NCP_DEPLOY_PREFIX="${NCP_DEPLOY_PREFIX:-uploads/lms-deploy}"
 SYNC_INTERVAL_MINUTES="${SYNC_INTERVAL_MINUTES:-2}"
 
+# nginx reverse-proxy settings (previously on web server).
+WAS_RATE_LIMIT_RPS="${WAS_RATE_LIMIT_RPS:-20r/s}"
+WAS_RATE_LIMIT_BURST="${WAS_RATE_LIMIT_BURST:-60}"
+WAS_CONN_LIMIT="${WAS_CONN_LIMIT:-50}"
+
 # Runtime env for backend service.
 SPRING_PROFILES_ACTIVE="${SPRING_PROFILES_ACTIVE:-prod}"
 DB_HOST="${DB_HOST:-TODO_DB_HOST}"
@@ -60,18 +65,18 @@ install_packages() {
   if command -v apt-get >/dev/null 2>&1; then
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -y
-    apt-get install -y curl tar ca-certificates rsync
+    apt-get install -y nginx curl tar ca-certificates rsync
     if ! command -v java >/dev/null 2>&1; then
       apt-get install -y openjdk-17-jre-headless
     fi
     return
   fi
   if command -v dnf >/dev/null 2>&1; then
-    dnf install -y curl tar awscli ca-certificates rsync java-17-openjdk-headless
+    dnf install -y nginx curl tar awscli ca-certificates rsync java-17-openjdk-headless
     return
   fi
   if command -v yum >/dev/null 2>&1; then
-    yum install -y curl tar awscli ca-certificates rsync java-17-openjdk-headless
+    yum install -y nginx curl tar awscli ca-certificates rsync java-17-openjdk-headless
     return
   fi
   echo "ERROR: unsupported package manager"
@@ -179,6 +184,46 @@ Group=lms
 [Install]
 WantedBy=multi-user.target
 EOF
+
+# ── nginx reverse proxy (previously on web server) ──────────────────
+cat > /etc/nginx/conf.d/lms-api.conf <<EOF
+limit_req_zone \$binary_remote_addr zone=lms_req:20m rate=${WAS_RATE_LIMIT_RPS};
+limit_conn_zone \$binary_remote_addr zone=lms_conn:20m;
+
+server {
+    listen 80 default_server;
+    server_name _;
+    client_max_body_size 1024m;
+
+    location = /health {
+        access_log off;
+        default_type text/plain;
+        return 200 "OK\n";
+    }
+
+    location / {
+        limit_req zone=lms_req burst=${WAS_RATE_LIMIT_BURST} nodelay;
+        limit_conn lms_conn ${WAS_CONN_LIMIT};
+
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_connect_timeout 5s;
+        proxy_read_timeout 120s;
+        proxy_send_timeout 120s;
+        proxy_pass http://127.0.0.1:8080;
+    }
+}
+EOF
+
+rm -f /etc/nginx/sites-enabled/default || true
+rm -f /etc/nginx/conf.d/default.conf || true
+
+systemctl enable nginx
+nginx -t
+systemctl start nginx
 
 cat > /usr/local/bin/lms-was-sync.sh <<'EOF'
 #!/usr/bin/env bash

@@ -44,12 +44,8 @@ async function main() {
   const version = gitSha.substring(0, 12);
   const publishedAt = new Date().toISOString();
 
-  const webArtifactPath = path.resolve("dist/lms-web-deploy.tar.gz");
   const wasArtifactPath = path.resolve("dist/lms-was-deploy.tar.gz");
 
-  if (!fs.existsSync(webArtifactPath)) {
-    throw new Error(`artifact not found: ${webArtifactPath}`);
-  }
   if (!fs.existsSync(wasArtifactPath)) {
     throw new Error(`artifact not found: ${wasArtifactPath}`);
   }
@@ -69,26 +65,12 @@ async function main() {
   await putObject(s3, bucket, checkKey, Buffer.from("ok\n", "utf-8"), "text/plain");
   await deleteObject(s3, bucket, checkKey);
 
-  const webReleaseKey = `${deployPrefix}/web/releases/${version}/lms-web-deploy.tar.gz`;
   const wasReleaseKey = `${deployPrefix}/was/releases/${version}/lms-was-deploy.tar.gz`;
-  const webLatestKey = `${deployPrefix}/web/latest/lms-web-deploy.tar.gz`;
   const wasLatestKey = `${deployPrefix}/was/latest/lms-was-deploy.tar.gz`;
-  const webVersionKey = `${deployPrefix}/web/latest/version.txt`;
   const wasVersionKey = `${deployPrefix}/was/latest/version.txt`;
-  const webMetaKey = `${deployPrefix}/web/latest/metadata.json`;
   const wasMetaKey = `${deployPrefix}/was/latest/metadata.json`;
 
-  const webArtifact = fs.readFileSync(webArtifactPath);
   const wasArtifact = fs.readFileSync(wasArtifactPath);
-  const webMetadata = JSON.stringify(
-    {
-      version,
-      publishedAt,
-      artifact: webReleaseKey,
-    },
-    null,
-    0
-  );
   const wasMetadata = JSON.stringify(
     {
       version,
@@ -99,20 +81,15 @@ async function main() {
     0
   );
 
-  await putObject(s3, bucket, webReleaseKey, webArtifact, "application/gzip");
   await putObject(s3, bucket, wasReleaseKey, wasArtifact, "application/gzip");
-  await putObject(s3, bucket, webLatestKey, webArtifact, "application/gzip");
   await putObject(s3, bucket, wasLatestKey, wasArtifact, "application/gzip");
-  await putObject(s3, bucket, webVersionKey, Buffer.from(`${version}\n`, "utf-8"), "text/plain");
   await putObject(s3, bucket, wasVersionKey, Buffer.from(`${version}\n`, "utf-8"), "text/plain");
-  await putObject(s3, bucket, webMetaKey, Buffer.from(webMetadata, "utf-8"), "application/json");
   await putObject(s3, bucket, wasMetaKey, Buffer.from(wasMetadata, "utf-8"), "application/json");
 
-  console.log(`Uploaded deploy artifacts to s3://${bucket}/${deployPrefix}`);
+  console.log(`Uploaded WAS deploy artifact to s3://${bucket}/${deployPrefix}`);
 }
 
 main().catch((error) => {
   console.error(error.message || error);
   process.exit(1);
 });
-

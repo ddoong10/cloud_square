@@ -36,7 +36,7 @@ jobs:
         run: |
           npm install --no-save aws-sdk@2.348.0
 
-      - name: Publish to NCP Object Storage
+      - name: Publish WAS artifact to NCP Object Storage
         env:
           NCP_DEPLOY_ACCESS_KEY: ${{ secrets.NCP_DEPLOY_ACCESS_KEY }}
           NCP_DEPLOY_SECRET_KEY: ${{ secrets.NCP_DEPLOY_SECRET_KEY }}
@@ -48,10 +48,20 @@ jobs:
         run: |
           node scripts/upload-to-ncp-s3.js
 
+      - name: Upload frontend to CDN bucket
+        env:
+          NCP_DEPLOY_ACCESS_KEY: ${{ secrets.NCP_DEPLOY_ACCESS_KEY }}
+          NCP_DEPLOY_SECRET_KEY: ${{ secrets.NCP_DEPLOY_SECRET_KEY }}
+          NCP_S3_REGION: ${{ secrets.NCP_S3_REGION }}
+          NCP_S3_ENDPOINT: ${{ secrets.NCP_S3_ENDPOINT }}
+          NCP_CDN_BUCKET: ${{ secrets.NCP_CDN_BUCKET }}
+          NCP_CDN_PREFIX: ${{ secrets.NCP_CDN_PREFIX }}
+        run: |
+          node scripts/upload-frontend-cdn.js
+
       - name: Upload artifacts to GitHub (optional)
         uses: actions/upload-artifact@v4
         with:
           name: deploy-artifacts-${{ github.sha }}
           path: |
-            dist/lms-web-deploy.tar.gz
             dist/lms-was-deploy.tar.gz
