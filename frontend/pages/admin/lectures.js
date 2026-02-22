@@ -87,13 +87,27 @@
                         <input name="thumbnail" type="file" accept="image/*" />
                         <label>설명</label>
                         <textarea name="description" rows="2"></textarea>
-                        <label>재생 시간 (초)</label>
-                        <input name="durationSeconds" type="number" min="0" />
+                        <label>재생 시간 (초) — 영상 선택 시 자동 감지</label>
+                        <input name="durationSeconds" type="number" min="0" readonly />
                         <label>정렬 순서</label>
                         <input name="sortOrder" type="number" min="0" />
                         <button type="submit" class="btn btn-primary" style="margin-top:12px">업로드 + 등록</button>
                     </form>
                 `);
+
+                // Auto-detect video duration
+                document.querySelector('#add-lecture-form input[name="file"]').addEventListener("change", (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const tempVideo = document.createElement("video");
+                    tempVideo.preload = "metadata";
+                    tempVideo.onloadedmetadata = () => {
+                        const duration = Math.round(tempVideo.duration);
+                        document.querySelector('#add-lecture-form input[name="durationSeconds"]').value = duration;
+                        URL.revokeObjectURL(tempVideo.src);
+                    };
+                    tempVideo.src = URL.createObjectURL(file);
+                });
 
                 document.getElementById("add-lecture-form").addEventListener("submit", async (e) => {
                     e.preventDefault();
