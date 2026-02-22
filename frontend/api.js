@@ -152,6 +152,10 @@
             return request("/api/courses/" + courseId + "/enroll", { method: "POST" });
         },
 
+        async unenroll(courseId) {
+            return request("/api/courses/" + courseId + "/enroll", { method: "DELETE" });
+        },
+
         async getProgress(courseId) {
             return request("/api/courses/" + courseId + "/progress", { method: "GET" });
         },

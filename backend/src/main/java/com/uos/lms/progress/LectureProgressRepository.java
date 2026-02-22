@@ -12,4 +12,6 @@ public interface LectureProgressRepository extends JpaRepository<LectureProgress
     long countByUserIdAndLectureIdInAndCompletedTrue(Long userId, Collection<Long> lectureIds);
 
     void deleteByLectureIdIn(Collection<Long> lectureIds);
+
+    void deleteByUserIdAndLectureIdIn(Long userId, Collection<Long> lectureIds);
 }

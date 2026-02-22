@@ -38,6 +38,8 @@
                 html += Components.progressBar(enrollment.progressPercent);
                 if (enrollment.status === "COMPLETED") {
                     html += `<button class="btn btn-primary" onclick="window.Pages._issueCert(${courseId})">이수증 발급</button>`;
+                } else {
+                    html += `<button class="btn btn-danger" id="unenroll-btn">수강 취소</button>`;
                 }
                 if (lectures.length > 0) {
                     html += `<a href="#/courses/${courseId}/learn/${lectures[0].id}" class="btn btn-primary">학습 시작</a>`;
@@ -84,6 +86,24 @@
                         alert("수강 신청 실패: " + err.message);
                         enrollBtn.disabled = false;
                         enrollBtn.textContent = "수강 신청";
+                    }
+                });
+            }
+
+            const unenrollBtn = document.getElementById("unenroll-btn");
+            if (unenrollBtn) {
+                unenrollBtn.addEventListener("click", async () => {
+                    if (!confirm("수강을 취소하시겠습니까? 학습 진행 기록이 모두 삭제됩니다.")) return;
+                    unenrollBtn.disabled = true;
+                    unenrollBtn.textContent = "취소 중...";
+                    try {
+                        await window.Api.unenroll(courseId);
+                        alert("수강이 취소되었습니다.");
+                        window.Pages.courseDetail({ id: courseId });
+                    } catch (err) {
+                        alert("수강 취소 실패: " + err.message);
+                        unenrollBtn.disabled = false;
+                        unenrollBtn.textContent = "수강 취소";
                     }
                 });
             }

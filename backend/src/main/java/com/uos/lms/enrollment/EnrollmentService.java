@@ -88,6 +88,22 @@ public class EnrollmentService {
         enrollmentRepository.save(enrollment);
     }
 
+    @Transactional
+    public void unenroll(Long userId, Long courseId) {
+        Enrollment enrollment = enrollmentRepository.findByUserIdAndCourseId(userId, courseId)
+                .orElseThrow(() -> new IllegalArgumentException("Not enrolled in this course"));
+        if (enrollment.getStatus() == EnrollmentStatus.COMPLETED) {
+            throw new IllegalArgumentException("Cannot unenroll from a completed course");
+        }
+        List<Long> lectureIds = lectureRepository.findByCourseIdOrderBySortOrderAsc(courseId).stream()
+                .map(l -> l.getId())
+                .toList();
+        if (!lectureIds.isEmpty()) {
+            lectureProgressRepository.deleteByUserIdAndLectureIdIn(userId, lectureIds);
+        }
+        enrollmentRepository.delete(enrollment);
+    }
+
     @Transactional(readOnly = true)
     public boolean isEnrolled(Long userId, Long courseId) {
         return enrollmentRepository.existsByUserIdAndCourseId(userId, courseId);

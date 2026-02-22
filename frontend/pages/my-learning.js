@@ -19,7 +19,12 @@
                 html += '<p class="text-muted">학습 중인 과정이 없습니다. <a href="#/courses">과정 둘러보기</a></p>';
             } else {
                 html += '<div class="enrollment-grid">';
-                inProgress.forEach(e => { html += Components.enrollmentCard(e); });
+                inProgress.forEach(e => {
+                    html += `<div class="enrollment-card-wrapper">`;
+                    html += Components.enrollmentCard(e);
+                    html += `<button class="btn btn-danger btn-sm unenroll-btn" data-course-id="${e.courseId}">수강 취소</button>`;
+                    html += `</div>`;
+                });
                 html += '</div>';
             }
             html += '</section>';
@@ -35,6 +40,25 @@
             html += '</section>';
 
             app.innerHTML = Components.page(user, html);
+
+            document.querySelectorAll(".unenroll-btn").forEach(btn => {
+                btn.addEventListener("click", async (e) => {
+                    e.stopPropagation();
+                    const courseId = btn.dataset.courseId;
+                    if (!confirm("수강을 취소하시겠습니까? 학습 진행 기록이 모두 삭제됩니다.")) return;
+                    btn.disabled = true;
+                    btn.textContent = "취소 중...";
+                    try {
+                        await window.Api.unenroll(courseId);
+                        alert("수강이 취소되었습니다.");
+                        window.Pages.myLearning();
+                    } catch (err) {
+                        alert("수강 취소 실패: " + err.message);
+                        btn.disabled = false;
+                        btn.textContent = "수강 취소";
+                    }
+                });
+            });
         } catch (err) {
             app.innerHTML = Components.page(user, Components.error(err.message));
         }

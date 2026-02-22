@@ -18,6 +18,12 @@ public class EnrollmentController {
         return enrollmentService.enroll(userId, courseId);
     }
 
+    @DeleteMapping("/api/courses/{courseId}/enroll")
+    public void unenroll(@PathVariable Long courseId, Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getPrincipal().toString());
+        enrollmentService.unenroll(userId, courseId);
+    }
+
     @GetMapping("/api/courses/{courseId}/progress")
     public EnrollmentResponse getProgress(@PathVariable Long courseId, Authentication authentication) {
         Long userId = Long.parseLong(authentication.getPrincipal().toString());
