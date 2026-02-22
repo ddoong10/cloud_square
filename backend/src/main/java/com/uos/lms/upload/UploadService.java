@@ -4,6 +4,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.uos.lms.config.StorageProperties;
+import com.uos.lms.vod.VodStationClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +25,7 @@ public class UploadService {
 
     private final AmazonS3 amazonS3;
     private final StorageProperties storageProperties;
+    private final VodStationClient vodStationClient;
 
     @Value("${app.static-base-url}")
     private String staticBaseUrl;
@@ -75,6 +77,10 @@ public class UploadService {
         String sourceUrl = endpoint + "/" + vodInputBucket + "/" + key;
 
         log.info("VOD uploaded: key={}, vodUrl={}, size={} bytes", key, vodUrl, file.getSize());
+
+        // VOD Station 카테고리 인코딩 자동 트리거 (비동기)
+        vodStationClient.triggerEncoding(vodInputBucket, key);
+
         return new VodUploadResponse(key, vodUrl, sourceUrl);
     }
 
