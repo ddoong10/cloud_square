@@ -98,8 +98,18 @@
                     msgEl.textContent = "영상이 준비 중이거나 접근 권한이 없습니다.";
                     msgEl.classList.remove("hidden");
                 }
-                document.getElementById("lms-player").style.display = "none";
+                var playerEl = document.getElementById("lms-player");
+                if (playerEl) playerEl.style.display = "none";
                 return;
+            }
+
+            // Wait for DOM to fully render before initializing Video.js
+            await new Promise(function (resolve) { requestAnimationFrame(resolve); });
+
+            // Dispose any leftover Video.js instance
+            var existingPlayer = document.getElementById("lms-player");
+            if (existingPlayer && existingPlayer.player) {
+                try { existingPlayer.player.dispose(); } catch (_) {}
             }
 
             // Initialize Video.js player
