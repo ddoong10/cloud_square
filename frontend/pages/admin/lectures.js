@@ -42,7 +42,8 @@
                     <td>${vodBadge}</td>
                     <td>${duration}</td>
                     <td>${l.sortOrder != null ? l.sortOrder : '-'}</td>
-                    <td>
+                    <td class="admin-actions-cell">
+                        <button class="btn-sm btn-primary" onclick="window.Pages.admin._editLecture(${l.id})">수정</button>
                         <button class="btn-sm btn-danger" onclick="window.Pages.admin._deleteLecture(${l.id})">삭제</button>
                     </td>
                 </tr>`;
@@ -158,6 +159,63 @@
             });
         } catch (err) {
             app.innerHTML = Components.page(user, Components.error(err.message));
+        }
+    };
+
+    window.Pages.admin._editLecture = async function (lectureId) {
+        try {
+            const [courses, lectures] = await Promise.all([
+                window.Api.getCourses({ all: true }),
+                window.Api.getLectures()
+            ]);
+            const lecture = lectures.find(l => l.id === lectureId);
+            if (!lecture) { alert("강의를 찾을 수 없습니다."); return; }
+
+            const courseOptions = courses.map(c =>
+                `<option value="${c.id}" ${c.id === lecture.courseId ? 'selected' : ''}>${Components.escapeHtml(c.title)}</option>`
+            ).join('');
+
+            Components.modal("강의 수정", `
+                <form id="edit-lecture-form">
+                    <label>제목 *</label>
+                    <input name="title" required maxlength="255" value="${Components.escapeHtml(lecture.title)}" />
+                    <label>과정</label>
+                    <select name="courseId"><option value="">선택 안 함</option>${courseOptions}</select>
+                    <label>설명</label>
+                    <textarea name="description" rows="2">${Components.escapeHtml(lecture.description || '')}</textarea>
+                    <label>재생 시간 (초)</label>
+                    <input name="durationSeconds" type="number" min="0" value="${lecture.durationSeconds || ''}" />
+                    <label>정렬 순서</label>
+                    <input name="sortOrder" type="number" min="0" value="${lecture.sortOrder != null ? lecture.sortOrder : ''}" />
+                    <button type="submit" class="btn btn-primary" style="margin-top:12px">저장</button>
+                </form>
+            `);
+
+            document.getElementById("edit-lecture-form").addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const form = e.target;
+                const submitBtn = form.querySelector("button[type=submit]");
+                submitBtn.disabled = true;
+                submitBtn.textContent = "저장 중...";
+
+                try {
+                    await window.Api.updateLecture(lectureId, {
+                        title: form.title.value,
+                        courseId: form.courseId.value ? parseInt(form.courseId.value) : null,
+                        description: form.description.value || null,
+                        durationSeconds: form.durationSeconds.value ? parseInt(form.durationSeconds.value) : null,
+                        sortOrder: form.sortOrder.value ? parseInt(form.sortOrder.value) : null
+                    });
+                    document.querySelector(".modal-overlay").remove();
+                    window.Pages.admin.lectures();
+                } catch (err) {
+                    alert("수정 실패: " + err.message);
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = "저장";
+                }
+            });
+        } catch (err) {
+            alert("강의 정보 로딩 실패: " + err.message);
         }
     };
 

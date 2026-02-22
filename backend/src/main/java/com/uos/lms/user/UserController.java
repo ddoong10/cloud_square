@@ -1,12 +1,16 @@
 package com.uos.lms.user;
 
+import com.uos.lms.certificate.CertificateRepository;
+import com.uos.lms.course.CourseRepository;
+import com.uos.lms.enrollment.EnrollmentRepository;
+import com.uos.lms.enrollment.EnrollmentStatus;
 import com.uos.lms.kms.EnvelopeEncryptionService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -16,13 +20,32 @@ import java.util.List;
 public class UserController {
 
     private final UserRepository userRepository;
+    private final CourseRepository courseRepository;
+    private final EnrollmentRepository enrollmentRepository;
+    private final CertificateRepository certificateRepository;
     private final EnvelopeEncryptionService envelopeEncryptionService;
+    private final PasswordEncoder passwordEncoder;
 
     @GetMapping("/admin/users")
     public List<AdminUserResponse> listUsers() {
         return userRepository.findAll().stream()
                 .map(AdminUserResponse::from)
                 .toList();
+    }
+
+    @GetMapping("/admin/stats")
+    public AdminStatsResponse adminStats() {
+        long totalUsers = userRepository.count();
+        long totalCourses = courseRepository.count();
+        long totalEnrollments = enrollmentRepository.count();
+        long totalCertificates = certificateRepository.count();
+        long activeStudents = enrollmentRepository.countDistinctUsers();
+        long completedEnrollments = enrollmentRepository.countByStatus(EnrollmentStatus.COMPLETED);
+        double completionRate = totalEnrollments > 0
+                ? Math.round((double) completedEnrollments / totalEnrollments * 1000) / 10.0
+                : 0;
+        return new AdminStatsResponse(totalUsers, totalCourses, totalEnrollments,
+                totalCertificates, activeStudents, completedEnrollments, completionRate);
     }
 
     @GetMapping("/me")
@@ -49,6 +72,24 @@ public class UserController {
                 encryptedAtRest,
                 true
         );
+    }
+
+    @PutMapping("/me/name")
+    public MeResponse updateName(@Valid @RequestBody UpdateNameRequest request, Authentication authentication) {
+        User user = getCurrentUser(authentication);
+        user.setName(request.name().trim());
+        userRepository.save(user);
+        return new MeResponse(user.getId(), user.getEmail(), user.getName(), user.getEffectiveRole());
+    }
+
+    @PutMapping("/me/password")
+    public void changePassword(@Valid @RequestBody ChangePasswordRequest request, Authentication authentication) {
+        User user = getCurrentUser(authentication);
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
+            throw new BadCredentialsException("현재 비밀번호가 일치하지 않습니다.");
+        }
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
     }
 
     private User getCurrentUser(Authentication authentication) {

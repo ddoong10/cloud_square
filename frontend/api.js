@@ -195,7 +195,7 @@
         },
 
         async downloadCertificatePdf(certNumber) {
-            const token = localStorage.getItem("token");
+            const token = localStorage.getItem(TOKEN_KEY);
             const res = await fetch(API_BASE_URL + "/api/certificates/" + certNumber + "/pdf", {
                 headers: { "Authorization": "Bearer " + token }
             });
@@ -211,9 +211,29 @@
             URL.revokeObjectURL(url);
         },
 
+        // Profile
+        async updateName(name) {
+            const data = await request("/api/me/name", { method: "PUT", body: { name } });
+            currentUser = data;
+            localStorage.setItem(USER_KEY, JSON.stringify(data));
+            return data;
+        },
+
+        async changePassword(currentPassword, newPassword) {
+            return request("/api/me/password", { method: "PUT", body: { currentPassword, newPassword } });
+        },
+
         // Admin
         async getAdminUsers() {
             return request("/api/admin/users", { method: "GET" });
+        },
+
+        async getAdminStats() {
+            return request("/api/admin/stats", { method: "GET" });
+        },
+
+        async updateLecture(lectureId, data) {
+            return request("/api/lectures/" + lectureId, { method: "PUT", body: data });
         }
     };
 })();

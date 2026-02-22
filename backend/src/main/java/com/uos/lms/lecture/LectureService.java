@@ -73,6 +73,31 @@ public class LectureService {
         return new StreamUrlResponse(videoUrl, "mp4");
     }
 
+    public LectureResponse update(Long lectureId, LectureUpdateRequest request) {
+        Lecture lecture = lectureRepository.findById(lectureId)
+                .orElseThrow(() -> new IllegalArgumentException("Lecture not found: " + lectureId));
+
+        if (request.title() != null && !request.title().isBlank()) {
+            lecture.setTitle(request.title().trim());
+        }
+        if (request.description() != null) {
+            lecture.setDescription(request.description());
+        }
+        if (request.courseId() != null) {
+            Course course = courseRepository.findById(request.courseId())
+                    .orElseThrow(() -> new IllegalArgumentException("Course not found: " + request.courseId()));
+            lecture.setCourse(course);
+        }
+        if (request.durationSeconds() != null) {
+            lecture.setDurationSeconds(request.durationSeconds());
+        }
+        if (request.sortOrder() != null) {
+            lecture.setSortOrder(request.sortOrder());
+        }
+
+        return toResponseWithDecryption(lectureRepository.save(lecture));
+    }
+
     public LectureResponse create(LectureCreateRequest request) {
         String plainVideoUrl = request.videoUrl().trim();
         String plainThumbnailUrl = normalizeOptionalUrl(request.thumbnailUrl());

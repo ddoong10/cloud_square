@@ -34,6 +34,7 @@
                         <td>${c.lectureCount}</td>
                         <td>${c.published ? '공개' : '비공개'}</td>
                         <td class="admin-actions-cell">
+                            <button class="btn-sm btn-primary" onclick="window.Pages.admin._editCourse(${c.id})">수정</button>
                             <button class="btn-sm btn-secondary" onclick="window.Pages.admin._togglePublish(${c.id}, ${!c.published})">${c.published ? '비공개' : '공개'}</button>
                             <button class="btn-sm btn-danger" onclick="window.Pages.admin._deleteCourse(${c.id})">삭제</button>
                         </td>
@@ -103,6 +104,63 @@
             window.Pages.admin.courses();
         } catch (err) {
             alert("변경 실패: " + err.message);
+        }
+    };
+
+    window.Pages.admin._editCourse = async function (courseId) {
+        try {
+            const course = await window.Api.getCourse(courseId);
+            Components.modal("과정 수정", `
+                <form id="edit-course-form">
+                    <label>제목 *</label>
+                    <input name="title" required maxlength="255" value="${Components.escapeHtml(course.title)}" />
+                    <label>설명</label>
+                    <textarea name="description" rows="3">${Components.escapeHtml(course.description || '')}</textarea>
+                    <label>카테고리</label>
+                    <input name="category" maxlength="100" value="${Components.escapeHtml(course.category || '')}" />
+                    <label>이수 기준 (%)</label>
+                    <input name="passCriteria" type="number" value="${course.passCriteria || 80}" min="1" max="100" />
+                    <label>새 썸네일 이미지 (변경 시)</label>
+                    <input name="thumbnail" type="file" accept="image/*" />
+                    <button type="submit" class="btn btn-primary" style="margin-top:12px">저장</button>
+                </form>
+            `);
+
+            document.getElementById("edit-course-form").addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const form = e.target;
+                const submitBtn = form.querySelector("button[type=submit]");
+                submitBtn.disabled = true;
+                submitBtn.textContent = "저장 중...";
+
+                try {
+                    let thumbnailUrl = undefined;
+                    if (form.thumbnail.files.length > 0) {
+                        const thumbUpload = await window.Api.upload(form.thumbnail.files[0]);
+                        thumbnailUrl = thumbUpload.url;
+                    }
+
+                    const updateData = {
+                        title: form.title.value,
+                        description: form.description.value || null,
+                        category: form.category.value || null,
+                        passCriteria: parseInt(form.passCriteria.value) || 80
+                    };
+                    if (thumbnailUrl !== undefined) {
+                        updateData.thumbnailUrl = thumbnailUrl;
+                    }
+
+                    await window.Api.updateCourse(courseId, updateData);
+                    document.querySelector(".modal-overlay").remove();
+                    window.Pages.admin.courses();
+                } catch (err) {
+                    alert("수정 실패: " + err.message);
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = "저장";
+                }
+            });
+        } catch (err) {
+            alert("과정 정보 로딩 실패: " + err.message);
         }
     };
 
