@@ -143,6 +143,11 @@
             if (streamInfo.type === "hls") {
                 player.src({ src: videoSrc, type: "application/x-mpegURL" });
 
+                // HLS 화질 선택 UI 활성화
+                if (typeof player.hlsQualitySelector === "function") {
+                    player.hlsQualitySelector({ displayCurrentQuality: true });
+                }
+
                 // Edge Auth 토큰이 있으면 모든 HLS 세그먼트 요청에 자동 첨부
                 if (streamInfo.token) {
                     player.ready(function () {
