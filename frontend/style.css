@@ -387,11 +387,47 @@ button:hover, .btn:hover { background: var(--accent-dark); }
     overflow: hidden;
 }
 
-.player-wrapper video {
+.player-wrapper .video-js {
     width: 100%;
-    display: block;
     max-height: 500px;
+    border-radius: 12px;
 }
+.player-wrapper .video-js .vjs-big-play-button {
+    border-radius: 50%;
+    width: 60px; height: 60px;
+    line-height: 60px;
+    border: none;
+    background: rgba(224, 89, 45, 0.85);
+}
+.player-wrapper .video-js:hover .vjs-big-play-button {
+    background: rgba(224, 89, 45, 1);
+}
+
+/* Watched progress bar (green overlay) */
+.vjs-watched-bar {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    background: rgba(76, 175, 80, 0.35);
+    pointer-events: none;
+    z-index: 0;
+    border-radius: 3px;
+}
+
+/* Player overlay message */
+.player-msg {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.8);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    z-index: 10;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+.player-msg.hidden { opacity: 0; }
 
 .learn-info { margin-top: 12px; }
 .learn-info h2 { margin: 0 0 12px; font-size: 1.2rem; }

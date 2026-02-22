@@ -7,6 +7,7 @@
         app.innerHTML = Components.page(user, Components.loading());
 
         let heartbeatInterval = null;
+        let player = null;
 
         try {
             const courseId = params.courseId;
@@ -32,7 +33,8 @@
             <div class="learn-layout">
                 <div class="learn-main">
                     <div class="player-wrapper">
-                        <video id="hls-player" controls playsinline></video>
+                        <video id="lms-player" class="video-js vjs-default-skin vjs-big-play-centered" playsinline></video>
+                        <div id="player-msg" class="player-msg hidden"></div>
                     </div>
                     <div class="learn-info">
                         <h2>${Components.escapeHtml(currentLecture.title)}</h2>
@@ -84,73 +86,104 @@
             // Load progress for sidebar
             loadSidebarProgress(courseId, lectures);
 
-            // Setup HLS player
-            const video = document.getElementById("hls-player");
+            // Video source
             const videoSrc = streamInfo ? streamInfo.url : null;
-
-            // Track furthest watched position for seek prevention
-            let maxWatchedPosition = resume.lastPosition || 0;
             const isCompleted = resume.completed;
+            let maxWatchedPosition = resume.lastPosition || 0;
             const MAX_SPEED = 2.0;
 
             if (!videoSrc) {
-                const wrapper = document.querySelector(".player-wrapper");
-                if (wrapper) {
-                    wrapper.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#888;font-size:1.1rem;">영상이 준비 중이거나 접근 권한이 없습니다.</div>';
+                const msgEl = document.getElementById("player-msg");
+                if (msgEl) {
+                    msgEl.textContent = "영상이 준비 중이거나 접근 권한이 없습니다.";
+                    msgEl.classList.remove("hidden");
                 }
-            } else if (videoSrc && streamInfo.type === "hls" && window.Hls && Hls.isSupported()) {
-                const hls = new Hls();
-                hls.loadSource(videoSrc);
-                hls.attachMedia(video);
-                hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    if (resume.lastPosition > 0 && !resume.completed) {
-                        video.currentTime = resume.lastPosition;
-                    }
-                    video.play().catch(() => {});
-                });
-            } else if (videoSrc) {
-                video.src = videoSrc;
-                video.addEventListener("loadedmetadata", () => {
-                    if (resume.lastPosition > 0 && !resume.completed) {
-                        video.currentTime = resume.lastPosition;
-                    }
-                });
+                document.getElementById("lms-player").style.display = "none";
+                return;
             }
 
-            // Seek prevention: only allow seeking up to maxWatchedPosition
+            // Initialize Video.js player
+            player = videojs("lms-player", {
+                controls: true,
+                autoplay: false,
+                preload: "auto",
+                fluid: true,
+                playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2.0],
+                controlBar: {
+                    children: [
+                        "playToggle",
+                        "currentTimeDisplay",
+                        "timeDivider",
+                        "durationDisplay",
+                        "progressControl",
+                        "playbackRateMenuButton",
+                        "volumePanel",
+                        "fullscreenToggle"
+                    ]
+                },
+                userActions: {
+                    doubleClick: false
+                }
+            });
+
+            // Set source
+            if (streamInfo.type === "hls") {
+                player.src({ src: videoSrc, type: "application/x-mpegURL" });
+            } else {
+                player.src({ src: videoSrc, type: "video/mp4" });
+            }
+
+            // Disable right-click on player
+            player.el().addEventListener("contextmenu", function (e) {
+                e.preventDefault();
+            });
+
+            // Seek prevention for incomplete lectures
             if (!isCompleted) {
                 let isSeeking = false;
-                video.addEventListener("seeking", () => {
+
+                player.on("seeking", function () {
                     if (isSeeking) return;
-                    if (video.currentTime > maxWatchedPosition + 2) {
+                    if (player.currentTime() > maxWatchedPosition + 2) {
                         isSeeking = true;
-                        video.currentTime = maxWatchedPosition;
+                        player.currentTime(maxWatchedPosition);
+                        showPlayerMsg("시청하지 않은 구간으로 이동할 수 없습니다.");
                         isSeeking = false;
                     }
                 });
 
-                video.addEventListener("timeupdate", () => {
-                    if (video.currentTime > maxWatchedPosition) {
-                        maxWatchedPosition = video.currentTime;
+                player.on("timeupdate", function () {
+                    if (player.currentTime() > maxWatchedPosition) {
+                        maxWatchedPosition = player.currentTime();
                     }
+                    // Update watched bar visual
+                    updateWatchedBar(player, maxWatchedPosition);
                 });
             }
 
-            // Speed limit: max 2x
-            video.addEventListener("ratechange", () => {
-                if (video.playbackRate > MAX_SPEED) {
-                    video.playbackRate = MAX_SPEED;
+            // Speed limit
+            player.on("ratechange", function () {
+                if (player.playbackRate() > MAX_SPEED) {
+                    player.playbackRate(MAX_SPEED);
+                    showPlayerMsg("최대 " + MAX_SPEED + "배속까지 가능합니다.");
+                }
+            });
+
+            // Resume position
+            player.on("loadedmetadata", function () {
+                if (resume.lastPosition > 0 && !resume.completed) {
+                    player.currentTime(resume.lastPosition);
                 }
             });
 
             // Heartbeat every 30 seconds
             heartbeatInterval = setInterval(async () => {
-                if (video.paused || video.ended) return;
+                if (!player || player.paused() || player.ended()) return;
                 try {
                     const result = await window.Api.heartbeat(lectureId, {
-                        currentPosition: Math.floor(video.currentTime),
+                        currentPosition: Math.floor(player.currentTime()),
                         watchedSeconds: 30,
-                        playbackSpeed: video.playbackRate
+                        playbackSpeed: player.playbackRate()
                     });
                     if (result.lectureJustCompleted) {
                         const checkEl = document.getElementById("check-" + lectureId);
@@ -161,7 +194,7 @@
             }, 30000);
 
             // On video ended
-            video.addEventListener("ended", async () => {
+            player.on("ended", async function () {
                 try {
                     await window.Api.completeLecture(lectureId);
                     const checkEl = document.getElementById("check-" + lectureId);
@@ -187,8 +220,36 @@
                 clearInterval(heartbeatInterval);
                 heartbeatInterval = null;
             }
+            if (player) {
+                try { player.dispose(); } catch (_) {}
+                player = null;
+            }
         };
     };
+
+    function showPlayerMsg(text) {
+        const msgEl = document.getElementById("player-msg");
+        if (!msgEl) return;
+        msgEl.textContent = text;
+        msgEl.classList.remove("hidden");
+        setTimeout(() => msgEl.classList.add("hidden"), 3000);
+    }
+
+    function updateWatchedBar(player, maxPos) {
+        var duration = player.duration();
+        if (!duration || duration <= 0) return;
+        var bar = document.getElementById("watched-bar");
+        if (!bar) {
+            var progressHolder = player.el().querySelector(".vjs-progress-holder");
+            if (!progressHolder) return;
+            bar = document.createElement("div");
+            bar.id = "watched-bar";
+            bar.className = "vjs-watched-bar";
+            progressHolder.appendChild(bar);
+        }
+        var pct = Math.min((maxPos / duration) * 100, 100);
+        bar.style.width = pct + "%";
+    }
 
     async function loadSidebarProgress(courseId, lectures) {
         try {
