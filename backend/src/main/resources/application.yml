@@ -26,7 +26,7 @@ app:
     secret: ${JWT_SECRET}
     access-token-expiration-seconds: ${JWT_ACCESS_TOKEN_EXPIRATION_SECONDS:3600}
   cors:
-    allowed-origin: ${CORS_ALLOWED_ORIGIN:https://lms.uoscholar-server.store} # TODO: add localhost origin for local frontend dev profile if needed
+    allowed-origin: ${CORS_ALLOWED_ORIGIN:https://lms.uoscholar-server.store,https://static.uoscholar-server.store}
   storage:
     access-key: ${NCP_ACCESS_KEY}
     secret-key: ${NCP_SECRET_KEY}
