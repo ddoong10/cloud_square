@@ -82,10 +82,14 @@ async function main() {
     const contentType = getContentType(file.fullPath);
     const body = fs.readFileSync(file.fullPath);
 
+    const ext = path.extname(file.relativePath).toLowerCase();
+    const isStatic = [".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".woff", ".woff2", ".ttf", ".eot"].includes(ext);
     const cacheControl =
       file.relativePath === "index.html"
         ? "no-cache, no-store, must-revalidate"
-        : "public, max-age=2592000";
+        : isStatic
+          ? "public, max-age=2592000"
+          : "public, max-age=0, must-revalidate";
 
     await s3
       .putObject({
