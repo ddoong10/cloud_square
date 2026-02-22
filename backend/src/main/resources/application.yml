@@ -45,6 +45,11 @@ app:
     cdn-base-url: ${VOD_CDN_BASE_URL:https://TODO_VOD_CDN}
     bucket-enc-name: ${VOD_BUCKET_ENC_NAME:TODO_VOD_BUCKET_ENC}
     input-bucket: ${VOD_INPUT_BUCKET:lms-vod-input}
+    edge-auth:
+      enabled: ${EDGE_AUTH_ENABLED:false}
+      key: ${EDGE_AUTH_KEY:}
+      token-name: ${EDGE_AUTH_TOKEN_NAME:token}
+      duration-seconds: ${EDGE_AUTH_DURATION_SECONDS:3600}
   certificate:
     verification-base-url: ${CERT_VERIFICATION_BASE_URL:https://lms.uoscholar-server.store/#/verify}
   demo:

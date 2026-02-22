@@ -7,6 +7,7 @@ import com.uos.lms.course.Course;
 import com.uos.lms.course.CourseRepository;
 import com.uos.lms.enrollment.EnrollmentRepository;
 import com.uos.lms.kms.EnvelopeEncryptionService;
+import com.uos.lms.security.EdgeAuthTokenGenerator;
 import com.uos.lms.user.UserRole;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,7 @@ public class LectureService {
     private final ObjectProvider<AmazonS3> amazonS3Provider;
     private final ObjectProvider<StorageProperties> storagePropertiesProvider;
     private final EnvelopeEncryptionService envelopeEncryptionService;
+    private final EdgeAuthTokenGenerator edgeAuthTokenGenerator;
 
     @Value("${app.static-base-url}")
     private String staticBaseUrl;
@@ -66,11 +68,13 @@ public class LectureService {
 
         String vodUrl = lecture.getVodUrl();
         if (vodUrl != null && !vodUrl.isBlank()) {
-            return new StreamUrlResponse(vodUrl, "hls");
+            String signedUrl = edgeAuthTokenGenerator.signUrl(vodUrl);
+            String token = edgeAuthTokenGenerator.generateToken(vodUrl);
+            return new StreamUrlResponse(signedUrl, "hls", token);
         }
 
         String videoUrl = envelopeEncryptionService.decrypt(lecture.getVideoUrl());
-        return new StreamUrlResponse(videoUrl, "mp4");
+        return new StreamUrlResponse(videoUrl, "mp4", null);
     }
 
     public LectureResponse update(Long lectureId, LectureUpdateRequest request) {

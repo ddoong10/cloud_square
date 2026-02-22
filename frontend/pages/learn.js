@@ -142,6 +142,22 @@
             // Set source
             if (streamInfo.type === "hls") {
                 player.src({ src: videoSrc, type: "application/x-mpegURL" });
+
+                // Edge Auth 토큰이 있으면 모든 HLS 세그먼트 요청에 자동 첨부
+                if (streamInfo.token) {
+                    player.ready(function () {
+                        var tech = player.tech({ IWillNotUseThisInPlugins: true });
+                        if (tech && tech.vhs) {
+                            tech.vhs.xhr.beforeRequest = function (options) {
+                                if (options.uri && options.uri.includes('/hls/')) {
+                                    var separator = options.uri.includes('?') ? '&' : '?';
+                                    options.uri = options.uri + separator + 'token=' + streamInfo.token;
+                                }
+                                return options;
+                            };
+                        }
+                    });
+                }
             } else {
                 player.src({ src: videoSrc, type: "video/mp4" });
             }
