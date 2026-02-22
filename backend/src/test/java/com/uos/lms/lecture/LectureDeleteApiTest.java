@@ -60,7 +60,7 @@ class LectureDeleteApiTest {
         userRepository.save(User.builder()
                 .email(USER_EMAIL)
                 .passwordHash(passwordEncoder.encode(PASSWORD))
-                .role(UserRole.USER)
+                .role(UserRole.STUDENT)
                 .build());
     }
 

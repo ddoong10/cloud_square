@@ -1,5 +1,6 @@
 package com.uos.lms.lecture;
 
+import com.uos.lms.course.Course;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -34,6 +35,27 @@ public class Lecture {
 
     @Column(name = "thumbnail_url_hash", length = 64)
     private String thumbnailUrlHash;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "course_id")
+    private Course course;
+
+    @Lob
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "vod_url", length = 2048)
+    private String vodUrl;
+
+    @Column(name = "duration_seconds")
+    private Integer durationSeconds;
+
+    @Column(name = "sort_order")
+    private Integer sortOrder;
+
+    @Lob
+    @Column(name = "resource_urls", columnDefinition = "TEXT")
+    private String resourceUrls;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

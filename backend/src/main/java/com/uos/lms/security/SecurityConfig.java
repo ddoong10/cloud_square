@@ -39,14 +39,26 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
+                        // Public endpoints
                         .requestMatchers(HttpMethod.GET, "/", "/health").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
+                        // Certificate verification (public)
+                        .requestMatchers(HttpMethod.GET, "/api/certificates/*/verify").permitAll()
+                        // Admin-only: uploads
                         .requestMatchers(HttpMethod.POST, "/api/uploads").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/lectures").hasRole("ADMIN")
+                        // Admin/Instructor: lecture management
+                        .requestMatchers(HttpMethod.POST, "/api/lectures").hasAnyRole("ADMIN", "INSTRUCTOR")
                         .requestMatchers(HttpMethod.POST, "/api/lectures/sync").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/lectures/*/crypto-check").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/lectures/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/lectures/**").hasAnyRole("ADMIN", "INSTRUCTOR")
+                        // Admin/Instructor: course management (create/update/delete)
+                        .requestMatchers(HttpMethod.POST, "/api/courses").hasAnyRole("ADMIN", "INSTRUCTOR")
+                        .requestMatchers(HttpMethod.PUT, "/api/courses/*").hasAnyRole("ADMIN", "INSTRUCTOR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/courses/*").hasAnyRole("ADMIN", "INSTRUCTOR")
+                        // Student: enrollment
+                        .requestMatchers(HttpMethod.POST, "/api/courses/*/enroll").hasRole("STUDENT")
+                        // All authenticated
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exception -> exception

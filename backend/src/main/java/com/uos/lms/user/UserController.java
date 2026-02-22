@@ -19,7 +19,7 @@ public class UserController {
     @GetMapping("/me")
     public MeResponse me(Authentication authentication) {
         User user = getCurrentUser(authentication);
-        return new MeResponse(user.getId(), user.getEmail(), user.getEffectiveRole());
+        return new MeResponse(user.getId(), user.getEmail(), user.getName(), user.getEffectiveRole());
     }
 
     @GetMapping("/me/resident-number")

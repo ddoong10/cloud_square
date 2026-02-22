@@ -13,6 +13,17 @@ public record LectureCreateRequest(
         String videoUrl,
 
         @Size(max = 2048, message = "Thumbnail URL must be 2048 chars or less")
-        String thumbnailUrl
+        String thumbnailUrl,
+
+        Long courseId,
+
+        String description,
+
+        @Size(max = 2048, message = "VOD URL must be 2048 chars or less")
+        String vodUrl,
+
+        Integer durationSeconds,
+
+        Integer sortOrder
 ) {
 }

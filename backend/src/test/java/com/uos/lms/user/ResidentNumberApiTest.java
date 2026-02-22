@@ -48,7 +48,7 @@ class ResidentNumberApiTest {
                 .passwordHash(passwordEncoder.encode(PASSWORD))
                 .residentNumberEncrypted(RESIDENT_NUMBER)
                 .residentNumberHash("dummy")
-                .role(UserRole.USER)
+                .role(UserRole.STUDENT)
                 .build());
     }
 

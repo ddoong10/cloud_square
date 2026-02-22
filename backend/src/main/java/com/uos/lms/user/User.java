@@ -31,6 +31,9 @@ public class User {
     @Column(name = "resident_number_hash", length = 64)
     private String residentNumberHash;
 
+    @Column(length = 100)
+    private String name;
+
     @Enumerated(EnumType.STRING)
     @Column(length = 20)
     private UserRole role;
@@ -39,7 +42,7 @@ public class User {
     private LocalDateTime createdAt;
 
     public UserRole getEffectiveRole() {
-        return role == null ? UserRole.USER : role;
+        return role == null ? UserRole.STUDENT : role;
     }
 
     @PrePersist
@@ -48,7 +51,7 @@ public class User {
             createdAt = LocalDateTime.now();
         }
         if (role == null) {
-            role = UserRole.USER;
+            role = UserRole.STUDENT;
         }
     }
 }

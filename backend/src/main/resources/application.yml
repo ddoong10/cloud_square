@@ -41,6 +41,10 @@ app:
     secret-key: ${KMS_SECRET_KEY:${NCP_SECRET_KEY:}}
     token-creator-id: ${KMS_TOKEN_CREATOR_ID:}
   static-base-url: ${STATIC_BASE_URL:https://static.uoscholar-server.store}
+  vod:
+    base-url: ${VOD_BASE_URL:https://vod.uoscholar-server.store}
+  certificate:
+    verification-base-url: ${CERT_VERIFICATION_BASE_URL:https://lms.uoscholar-server.store/#/verify}
   demo:
     user:
       email: ${DEMO_USER_EMAIL:demo@lms.local}
@@ -48,6 +52,9 @@ app:
     admin:
       email: ${DEMO_ADMIN_EMAIL:admin@lms.local}
       password: ${DEMO_ADMIN_PASSWORD:admin1234!}
+    instructor:
+      email: ${DEMO_INSTRUCTOR_EMAIL:instructor@lms.local}
+      password: ${DEMO_INSTRUCTOR_PASSWORD:instructor1234!}
 
 logging:
   level:

@@ -69,13 +69,16 @@ public class JwtTokenProvider {
         Claims claims = parser().parseSignedClaims(token).getPayload();
         String roleName = claims.get("role", String.class);
         if (roleName == null || roleName.isBlank()) {
-            return UserRole.USER;
+            return UserRole.STUDENT;
+        }
+        if ("USER".equals(roleName)) {
+            return UserRole.STUDENT;
         }
 
         try {
             return UserRole.valueOf(roleName);
         } catch (IllegalArgumentException exception) {
-            return UserRole.USER;
+            return UserRole.STUDENT;
         }
     }
 

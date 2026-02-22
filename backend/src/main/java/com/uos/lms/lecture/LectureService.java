@@ -3,6 +3,8 @@ package com.uos.lms.lecture;
 import com.amazonaws.services.s3.AmazonS3;
 import com.uos.lms.common.HashingUtils;
 import com.uos.lms.config.StorageProperties;
+import com.uos.lms.course.Course;
+import com.uos.lms.course.CourseRepository;
 import com.uos.lms.kms.EnvelopeEncryptionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +21,7 @@ import java.util.Locale;
 public class LectureService {
 
     private final LectureRepository lectureRepository;
+    private final CourseRepository courseRepository;
     private final ObjectProvider<AmazonS3> amazonS3Provider;
     private final ObjectProvider<StorageProperties> storagePropertiesProvider;
     private final EnvelopeEncryptionService envelopeEncryptionService;
@@ -34,15 +37,33 @@ public class LectureService {
                 .toList();
     }
 
+    public List<LectureResponse> listByCourse(Long courseId) {
+        return lectureRepository.findByCourseIdOrderBySortOrderAsc(courseId).stream()
+                .map(this::toResponseWithDecryption)
+                .toList();
+    }
+
     public LectureResponse create(LectureCreateRequest request) {
         String plainVideoUrl = request.videoUrl().trim();
         String plainThumbnailUrl = normalizeOptionalUrl(request.thumbnailUrl());
+
+        Course course = null;
+        if (request.courseId() != null) {
+            course = courseRepository.findById(request.courseId())
+                    .orElseThrow(() -> new IllegalArgumentException("Course not found: " + request.courseId()));
+        }
+
         Lecture lecture = Lecture.builder()
                 .title(request.title().trim())
                 .videoUrl(envelopeEncryptionService.encrypt(plainVideoUrl))
                 .videoUrlHash(HashingUtils.sha256Hex(plainVideoUrl))
                 .thumbnailUrl(plainThumbnailUrl)
                 .thumbnailUrlHash(HashingUtils.sha256Hex(plainThumbnailUrl))
+                .course(course)
+                .description(request.description())
+                .vodUrl(normalizeOptionalUrl(request.vodUrl()))
+                .durationSeconds(request.durationSeconds())
+                .sortOrder(request.sortOrder())
                 .build();
 
         return toResponseWithDecryption(lectureRepository.save(lecture));
@@ -52,37 +73,21 @@ public class LectureService {
         Lecture lecture = lectureRepository.findById(lectureId)
                 .orElseThrow(() -> new IllegalArgumentException("Lecture not found: " + lectureId));
 
-        boolean objectDeleteAttempted = false;
-        boolean objectDeleted = false;
-        boolean thumbnailDeleteAttempted = false;
-        boolean thumbnailDeleted = false;
-
         AmazonS3 amazonS3 = amazonS3Provider.getIfAvailable();
         StorageProperties storageProperties = storagePropertiesProvider.getIfAvailable();
         String plainVideoUrl = envelopeEncryptionService.decrypt(lecture.getVideoUrl());
         String plainThumbnailUrl = decryptIfEnvelope(lecture.getThumbnailUrl());
 
         DeleteAttemptResult videoDeleteResult = deleteObjectIfPossible(amazonS3, storageProperties, lectureId, plainVideoUrl, "video");
-        objectDeleteAttempted = videoDeleteResult.attempted();
-        objectDeleted = videoDeleteResult.deleted();
-
-        DeleteAttemptResult thumbnailDeleteResult = deleteObjectIfPossible(
-                amazonS3,
-                storageProperties,
-                lectureId,
-                plainThumbnailUrl,
-                "thumbnail"
-        );
-        thumbnailDeleteAttempted = thumbnailDeleteResult.attempted();
-        thumbnailDeleted = thumbnailDeleteResult.deleted();
+        DeleteAttemptResult thumbnailDeleteResult = deleteObjectIfPossible(amazonS3, storageProperties, lectureId, plainThumbnailUrl, "thumbnail");
 
         lectureRepository.delete(lecture);
         return new LectureDeleteResponse(
                 lectureId,
-                objectDeleteAttempted,
-                objectDeleted,
-                thumbnailDeleteAttempted,
-                thumbnailDeleted
+                videoDeleteResult.attempted(),
+                videoDeleteResult.deleted(),
+                thumbnailDeleteResult.attempted(),
+                thumbnailDeleteResult.deleted()
         );
     }
 
@@ -112,7 +117,18 @@ public class LectureService {
     public LectureResponse toResponseWithDecryption(Lecture lecture) {
         String decryptedVideoUrl = envelopeEncryptionService.decrypt(lecture.getVideoUrl());
         String decryptedThumbnailUrl = decryptIfEnvelope(lecture.getThumbnailUrl());
-        return new LectureResponse(lecture.getId(), lecture.getTitle(), decryptedVideoUrl, decryptedThumbnailUrl);
+        return new LectureResponse(
+                lecture.getId(),
+                lecture.getTitle(),
+                decryptedVideoUrl,
+                decryptedThumbnailUrl,
+                lecture.getCourse() != null ? lecture.getCourse().getId() : null,
+                lecture.getDescription(),
+                lecture.getVodUrl(),
+                lecture.getDurationSeconds(),
+                lecture.getSortOrder(),
+                lecture.getResourceUrls()
+        );
     }
 
     private DeleteAttemptResult deleteObjectIfPossible(

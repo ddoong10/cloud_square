@@ -14,6 +14,9 @@ public record SignupRequest(
         @Size(min = 8, max = 100, message = "Password must be between 8 and 100 characters")
         String password,
 
+        @Size(max = 100, message = "Name must be 100 chars or less")
+        String name,
+
         @NotBlank(message = "Resident number is required")
         @Pattern(regexp = "^\\d{6}-?\\d{7}$", message = "Resident number format is invalid")
         String residentNumber

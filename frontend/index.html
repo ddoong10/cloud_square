@@ -5,106 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>경기도교통연수원 LMS</title>
     <link rel="stylesheet" href="style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7"></script>
 </head>
 <body>
 <div class="bg-layer"></div>
-<main class="shell">
-    <section id="auth-view" class="auth-view">
-        <div class="auth-copy">
-            <p class="eyebrow">GYEONGGI TRAFFIC TRAINING LMS</p>
-            <h1>경기도교통연수원 학습관리시스템</h1>
-            <p>로그인 후 강의자료를 조회하고, 관리자는 영상 업로드 및 강의 등록을 진행할 수 있습니다.</p>
-        </div>
+<main id="app" class="shell"></main>
 
-        <div class="auth-card card">
-            <div class="tab-row">
-                <button id="show-login-btn" class="tab-btn active" type="button">로그인</button>
-                <button id="show-signup-btn" class="tab-btn" type="button">회원가입</button>
-            </div>
+<script src="config.js?v=20260223"></script>
+<script src="router.js?v=20260223"></script>
+<script src="api.js?v=20260223"></script>
+<script src="components.js?v=20260223"></script>
 
-            <form id="login-form">
-                <label for="login-email">이메일</label>
-                <input id="login-email" type="email" placeholder="demo@lms.local 또는 admin@lms.local" required />
+<script src="pages/auth.js?v=20260223"></script>
+<script src="pages/home.js?v=20260223"></script>
+<script src="pages/courses.js?v=20260223"></script>
+<script src="pages/course-detail.js?v=20260223"></script>
+<script src="pages/learn.js?v=20260223"></script>
+<script src="pages/my-learning.js?v=20260223"></script>
+<script src="pages/my-certificates.js?v=20260223"></script>
+<script src="pages/verify.js?v=20260223"></script>
+<script src="pages/profile.js?v=20260223"></script>
 
-                <label for="login-password">비밀번호</label>
-                <input id="login-password" type="password" placeholder="비밀번호 입력" required />
+<script src="pages/admin/dashboard.js?v=20260223"></script>
+<script src="pages/admin/courses.js?v=20260223"></script>
+<script src="pages/admin/lectures.js?v=20260223"></script>
+<script src="pages/admin/users.js?v=20260223"></script>
+<script src="pages/admin/certificates.js?v=20260223"></script>
 
-                <button type="submit">로그인</button>
-            </form>
-
-            <form id="signup-form" class="hidden">
-                <label for="signup-email">이메일</label>
-                <input id="signup-email" type="email" placeholder="user@example.com" required />
-
-                <label for="signup-password">비밀번호</label>
-                <input id="signup-password" type="password" placeholder="8자 이상" required />
-
-                <label for="signup-resident-number">주민등록번호</label>
-                <input id="signup-resident-number" type="text" placeholder="901010-1234567" required />
-
-                <button type="submit">회원가입</button>
-            </form>
-
-            <p id="auth-status" class="status"></p>
-        </div>
-    </section>
-
-    <section id="app-view" class="app-view hidden">
-        <header class="topbar card">
-            <div>
-                <p class="eyebrow">LMS DASHBOARD</p>
-                <h2>강의 자료</h2>
-            </div>
-            <div class="topbar-actions">
-                <p id="user-badge" class="user-badge"></p>
-                <button id="logout-btn" class="secondary" type="button">로그아웃</button>
-            </div>
-        </header>
-
-        <section class="card">
-            <div class="section-head">
-                <h3>강의 목록</h3>
-                <button id="refresh-btn" type="button">목록 새로고침</button>
-            </div>
-            <ul id="lecture-list" class="lecture-list"></ul>
-        </section>
-
-        <section class="card hidden" id="admin-panel">
-            <div class="section-head">
-                <h3>관리자 도구</h3>
-                <button id="sync-btn" type="button" class="secondary">CDN 동기화</button>
-            </div>
-            <p class="hint">제목 + 파일 한 번 제출로 업로드와 강의 등록을 동시에 처리합니다. 강의 목록에서 삭제도 가능합니다.</p>
-            <form id="admin-create-form">
-                <label for="lecture-title">강의 제목</label>
-                <input id="lecture-title" type="text" placeholder="예: 교통안전 기초 교육" required />
-
-                <label for="lecture-file">영상 파일</label>
-                <input id="lecture-file" type="file" accept="video/*" required />
-
-                <label for="lecture-thumbnail-file">썸네일 파일 (선택)</label>
-                <input id="lecture-thumbnail-file" type="file" accept="image/*" />
-
-                <button type="submit">업로드 + 강의 등록</button>
-            </form>
-            <pre id="admin-result" class="output"></pre>
-        </section>
-
-        <section class="card">
-            <div class="section-head">
-                <h3>내 계정</h3>
-                <span class="static-label">STATIC: <strong id="static-base"></strong></span>
-            </div>
-            <div class="account-actions">
-                <button id="resident-number-btn" type="button" class="secondary">내 주민번호 확인</button>
-            </div>
-            <pre id="resident-number-result" class="output"></pre>
-            <pre id="me-result" class="output"></pre>
-        </section>
-    </section>
-</main>
-
-<script src="config.js?v=20260210-7"></script>
-<script src="app.js?v=20260210-7"></script>
+<script src="app.js?v=20260223"></script>
 </body>
 </html>

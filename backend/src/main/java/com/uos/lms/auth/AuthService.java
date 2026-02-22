@@ -56,12 +56,18 @@ public class AuthService {
             throw new IllegalArgumentException("Email is already registered");
         }
 
+        String name = request.name() != null ? request.name().trim() : null;
+        if (name != null && name.isEmpty()) {
+            name = null;
+        }
+
         User user = User.builder()
                 .email(email)
                 .passwordHash(passwordEncoder.encode(request.password()))
+                .name(name)
                 .residentNumberEncrypted(envelopeEncryptionService.encrypt(residentNumber))
                 .residentNumberHash(HashingUtils.sha256Hex(residentNumber))
-                .role(UserRole.USER)
+                .role(UserRole.STUDENT)
                 .build();
 
         User savedUser = userRepository.save(user);
