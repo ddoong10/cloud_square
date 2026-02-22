@@ -98,6 +98,7 @@ public class CertificateService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public byte[] generatePdf(String certificateNumber) throws IOException {
         Certificate certificate = certificateRepository.findByCertificateNumber(certificateNumber)
                 .orElseThrow(() -> new IllegalArgumentException("Certificate not found: " + certificateNumber));
