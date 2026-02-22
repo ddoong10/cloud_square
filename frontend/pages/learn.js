@@ -150,31 +150,27 @@
 
             // Seek prevention for incomplete lectures
             if (!isCompleted) {
-                var lastTimeBeforeSeek = 0;
                 var isSeeking = false;
 
-                player.on("timeupdate", function () {
-                    if (!isSeeking) {
-                        lastTimeBeforeSeek = player.currentTime();
-                    }
-                    if (player.currentTime() > maxWatchedPosition) {
-                        maxWatchedPosition = player.currentTime();
-                    }
-                    updateWatchedBar(player, maxWatchedPosition);
-                });
-
-                player.on("seeking", function () {
+                function enforceSeekLimit() {
                     if (isSeeking) return;
-                    var target = player.currentTime();
-                    // Only block if seeking FORWARD past watched position
-                    if (target > maxWatchedPosition + 2) {
+                    var current = player.currentTime();
+                    if (current > maxWatchedPosition + 2) {
                         isSeeking = true;
                         player.currentTime(maxWatchedPosition);
                         showPlayerMsg("시청하지 않은 구간으로 이동할 수 없습니다.");
-                        setTimeout(function () { isSeeking = false; }, 100);
+                        setTimeout(function () { isSeeking = false; }, 500);
+                        return;
                     }
-                    // Backward seeking is always allowed - no message
-                });
+                    if (current > maxWatchedPosition) {
+                        maxWatchedPosition = current;
+                    }
+                    updateWatchedBar(player, maxWatchedPosition);
+                }
+
+                player.on("seeking", enforceSeekLimit);
+                player.on("seeked", enforceSeekLimit);
+                player.on("timeupdate", enforceSeekLimit);
             }
 
             // Speed limit
