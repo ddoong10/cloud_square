@@ -64,11 +64,10 @@ public class UploadService {
         }
 
         // HLS URL via VOD Station CDN
-        String stem = key.contains(".") ? key.substring(0, key.lastIndexOf('.')) : key;
         String normalizedCdnBase = vodCdnBaseUrl.endsWith("/")
                 ? vodCdnBaseUrl.substring(0, vodCdnBaseUrl.length() - 1)
                 : vodCdnBaseUrl;
-        String vodUrl = normalizedCdnBase + "/hls/" + vodBucketEncName + "/" + stem + "/index.m3u8";
+        String vodUrl = normalizedCdnBase + "/hls/" + vodBucketEncName + "/" + key + "/index.m3u8";
 
         String endpoint = storageProperties.getEndpoint().endsWith("/")
                 ? storageProperties.getEndpoint().substring(0, storageProperties.getEndpoint().length() - 1)
