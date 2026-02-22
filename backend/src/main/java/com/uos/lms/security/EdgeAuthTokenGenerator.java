@@ -43,7 +43,8 @@ public class EdgeAuthTokenGenerator {
         }
 
         String path = extractPath(vodUrl);
-        String aclPath = path.substring(0, path.lastIndexOf('/') + 1) + "*";
+        // acl 값 안의 '~'를 '%7E'로 이스케이프 (토큰 구분자 '~'와 충돌 방지)
+        String aclPath = (path.substring(0, path.lastIndexOf('/') + 1) + "*").replace("~", "%7E");
 
         long now = Instant.now().getEpochSecond();
         long exp = now + props.getDurationSeconds();
