@@ -130,7 +130,6 @@
                         "durationDisplay",
                         "progressControl",
                         "playbackRateMenuButton",
-                        "qualitySelector",
                         "volumePanel",
                         "fullscreenToggle"
                     ]
@@ -143,11 +142,6 @@
             // Set source
             if (streamInfo.type === "hls") {
                 player.src({ src: videoSrc, type: "application/x-mpegURL" });
-
-                // HLS 화질 선택 UI 활성화
-                if (typeof player.hlsQualitySelector === "function") {
-                    player.hlsQualitySelector({ displayCurrentQuality: true });
-                }
 
                 // Edge Auth 토큰이 있으면 모든 HLS 세그먼트 요청에 자동 첨부
                 if (streamInfo.token) {
@@ -164,6 +158,17 @@
                         }
                     });
                 }
+
+                // HLS 화질 선택 UI 활성화 (소스 설정 후 ready 콜백에서 초기화)
+                player.ready(function () {
+                    if (typeof player.hlsQualitySelector === "function") {
+                        try {
+                            player.hlsQualitySelector({ displayCurrentQuality: true });
+                        } catch (e) {
+                            console.warn("HLS quality selector init failed:", e);
+                        }
+                    }
+                });
             } else {
                 player.src({ src: videoSrc, type: "video/mp4" });
             }
