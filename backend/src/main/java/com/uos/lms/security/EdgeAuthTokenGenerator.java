@@ -54,6 +54,21 @@ public class EdgeAuthTokenGenerator {
         return tokenBody + "~hmac=" + hmac;
     }
 
+    /**
+     * 지정된 ACL 경로로 Edge Auth 토큰 생성 (카테고리 인코딩 variants용).
+     */
+    public String generateTokenForAcl(String aclPath) {
+        if (!props.isEnabled() || props.getKey() == null || props.getKey().isBlank()) {
+            return null;
+        }
+        String escapedAcl = aclPath.replace("~", "%7E");
+        long now = Instant.now().getEpochSecond();
+        long exp = now + props.getDurationSeconds();
+        String tokenBody = "st=" + now + "~exp=" + exp + "~acl=" + escapedAcl;
+        String hmac = hmacSha256Hex(props.getKey(), tokenBody);
+        return tokenBody + "~hmac=" + hmac;
+    }
+
     private String hmacSha256Hex(String key, String data) {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");

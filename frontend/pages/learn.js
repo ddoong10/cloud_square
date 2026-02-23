@@ -8,6 +8,7 @@
 
         let heartbeatInterval = null;
         let player = null;
+        let masterBlobUrl = null;
 
         try {
             const courseId = params.courseId;
@@ -141,17 +142,34 @@
 
             // Set source
             if (streamInfo.type === "hls") {
-                player.src({ src: videoSrc, type: "application/x-mpegURL" });
+                var hlsToken = streamInfo.token;
+
+                // 카테고리 인코딩 variants가 있으면 마스터 플레이리스트 생성
+                if (streamInfo.variants && streamInfo.variants.length > 0) {
+                    var m3u8 = "#EXTM3U\n";
+                    streamInfo.variants.forEach(function (v) {
+                        m3u8 += "#EXT-X-STREAM-INF:BANDWIDTH=" + v.bandwidth
+                            + ",RESOLUTION=" + v.resolution
+                            + ",NAME=\"" + v.name + "\"\n";
+                        m3u8 += v.url + "\n";
+                    });
+                    var blob = new Blob([m3u8], { type: "application/vnd.apple.mpegurl" });
+                    masterBlobUrl = URL.createObjectURL(blob);
+                    player.src({ src: masterBlobUrl, type: "application/x-mpegURL" });
+                    hlsToken = streamInfo.variantToken || streamInfo.token;
+                } else {
+                    player.src({ src: videoSrc, type: "application/x-mpegURL" });
+                }
 
                 // Edge Auth 토큰이 있으면 모든 HLS 세그먼트 요청에 자동 첨부
-                if (streamInfo.token) {
+                if (hlsToken) {
                     player.ready(function () {
                         var tech = player.tech({ IWillNotUseThisInPlugins: true });
                         if (tech && tech.vhs) {
                             tech.vhs.xhr.beforeRequest = function (options) {
                                 if (options.uri && options.uri.includes('/hls/')) {
                                     var separator = options.uri.includes('?') ? '&' : '?';
-                                    options.uri = options.uri + separator + 'token=' + streamInfo.token;
+                                    options.uri = options.uri + separator + 'token=' + hlsToken;
                                 }
                                 return options;
                             };
@@ -159,7 +177,7 @@
                     });
                 }
 
-                // HLS 화질 선택 UI 활성화 (소스 설정 후 ready 콜백에서 초기화)
+                // HLS 화질 선택 UI 활성화
                 player.ready(function () {
                     if (typeof player.hlsQualitySelector === "function") {
                         try {
@@ -265,6 +283,10 @@
             if (player) {
                 try { player.dispose(); } catch (_) {}
                 player = null;
+            }
+            if (masterBlobUrl) {
+                URL.revokeObjectURL(masterBlobUrl);
+                masterBlobUrl = null;
             }
         };
     };

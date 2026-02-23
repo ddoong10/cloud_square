@@ -16,4 +16,5 @@ public class VodStationProperties {
     private String categoryId = "";
     private String accessKey = "";
     private String secretKey = "";
+    private String categoryName = "lms-multi";
 }

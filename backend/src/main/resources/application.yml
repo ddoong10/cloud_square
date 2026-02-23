@@ -56,6 +56,7 @@ app:
       category-id: ${VOD_STATION_CATEGORY_ID:}
       access-key: ${VOD_STATION_ACCESS_KEY:${NCP_ACCESS_KEY:}}
       secret-key: ${VOD_STATION_SECRET_KEY:${NCP_SECRET_KEY:}}
+      category-name: ${VOD_STATION_CATEGORY_NAME:lms-multi}
   certificate:
     verification-base-url: ${CERT_VERIFICATION_BASE_URL:https://lms.uoscholar-server.store/#/verify}
   demo:

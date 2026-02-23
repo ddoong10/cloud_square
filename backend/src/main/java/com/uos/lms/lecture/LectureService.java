@@ -3,6 +3,7 @@ package com.uos.lms.lecture;
 import com.amazonaws.services.s3.AmazonS3;
 import com.uos.lms.common.HashingUtils;
 import com.uos.lms.config.StorageProperties;
+import com.uos.lms.config.VodStationProperties;
 import com.uos.lms.course.Course;
 import com.uos.lms.course.CourseRepository;
 import com.uos.lms.enrollment.EnrollmentRepository;
@@ -32,9 +33,16 @@ public class LectureService {
     private final ObjectProvider<StorageProperties> storagePropertiesProvider;
     private final EnvelopeEncryptionService envelopeEncryptionService;
     private final EdgeAuthTokenGenerator edgeAuthTokenGenerator;
+    private final VodStationProperties vodStationProperties;
 
     @Value("${app.static-base-url}")
     private String staticBaseUrl;
+
+    @Value("${app.vod.cdn-base-url}")
+    private String vodCdnBaseUrl;
+
+    @Value("${app.vod.bucket-enc-name}")
+    private String vodBucketEncName;
 
     public List<LectureResponse> list() {
         return lectureRepository.findAllByOrderByCreatedAtDesc().stream()
@@ -70,11 +78,19 @@ public class LectureService {
         if (vodUrl != null && !vodUrl.isBlank()) {
             String signedUrl = edgeAuthTokenGenerator.signUrl(vodUrl);
             String token = edgeAuthTokenGenerator.generateToken(vodUrl);
-            return new StreamUrlResponse(signedUrl, "hls", token);
+
+            List<StreamUrlResponse.QualityVariant> variants = buildQualityVariants(vodUrl);
+            String variantToken = null;
+            if (!variants.isEmpty()) {
+                String categoryAcl = "/hls/" + vodBucketEncName + "/" + vodStationProperties.getCategoryName() + "/*";
+                variantToken = edgeAuthTokenGenerator.generateTokenForAcl(categoryAcl);
+            }
+
+            return new StreamUrlResponse(signedUrl, "hls", token, variants, variantToken);
         }
 
         String videoUrl = envelopeEncryptionService.decrypt(lecture.getVideoUrl());
-        return new StreamUrlResponse(videoUrl, "mp4", null);
+        return new StreamUrlResponse(videoUrl, "mp4", null, List.of(), null);
     }
 
     public LectureResponse update(Long lectureId, LectureUpdateRequest request) {
@@ -171,6 +187,42 @@ public class LectureService {
                 thumbnailEncryptedAtRest,
                 thumbnailDecryptionOk
         );
+    }
+
+    private List<StreamUrlResponse.QualityVariant> buildQualityVariants(String vodUrl) {
+        if (!vodStationProperties.isEnabled()
+                || vodStationProperties.getCategoryName() == null
+                || vodStationProperties.getCategoryName().isBlank()) {
+            return List.of();
+        }
+        try {
+            // vodUrl: {cdnBase}/hls/{bucketEncName}/{path}/{filename}.mp4/index.m3u8
+            String pathWithoutIndex = vodUrl.replaceAll("/index\\.m3u8$", "");
+            int lastSlash = pathWithoutIndex.lastIndexOf('/');
+            String mp4Filename = pathWithoutIndex.substring(lastSlash + 1);
+            String baseName = mp4Filename.replaceAll("\\.mp4$", "");
+
+            String channelBase = vodCdnBaseUrl.endsWith("/")
+                    ? vodCdnBaseUrl.substring(0, vodCdnBaseUrl.length() - 1)
+                    : vodCdnBaseUrl;
+            String hlsBase = channelBase + "/hls/" + vodBucketEncName + "/"
+                    + vodStationProperties.getCategoryName() + "/";
+
+            return List.of(
+                    new StreamUrlResponse.QualityVariant(
+                            hlsBase + baseName + "_AVC_HD_1Pass_30fps.mp4/index.m3u8",
+                            3000000, "1280x720", "HD 720p"),
+                    new StreamUrlResponse.QualityVariant(
+                            hlsBase + baseName + "_AVC_SD_1Pass_30fps.mp4/index.m3u8",
+                            1500000, "854x480", "SD 480p"),
+                    new StreamUrlResponse.QualityVariant(
+                            hlsBase + baseName + "_AVC_SD_1Pass_30fps_1.mp4/index.m3u8",
+                            800000, "640x360", "SD 360p")
+            );
+        } catch (Exception e) {
+            log.warn("Failed to build quality variants from vodUrl: {}", vodUrl, e);
+            return List.of();
+        }
     }
 
     public LectureResponse toResponseWithDecryption(Lecture lecture) {
