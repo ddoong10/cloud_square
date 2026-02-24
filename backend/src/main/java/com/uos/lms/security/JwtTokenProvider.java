@@ -8,6 +8,7 @@ import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +19,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Date;
 
+@Slf4j
 @Component
 public class JwtTokenProvider {
 
@@ -35,7 +37,7 @@ public class JwtTokenProvider {
             throw new IllegalStateException("JWT_SECRET is required");
         }
         if (jwtSecret.length() < 32) {
-            throw new IllegalStateException("JWT_SECRET must be at least 32 characters for security");
+            log.warn("JWT_SECRET is shorter than 32 characters — consider using a stronger secret");
         }
         secretKey = Keys.hmacShaKeyFor(sha256(jwtSecret));
     }
