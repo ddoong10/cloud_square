@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
+import java.util.Set;
 import java.util.UUID;
 
 @Slf4j
@@ -39,9 +40,24 @@ public class UploadService {
     @Value("${app.vod.input-bucket}")
     private String vodInputBucket;
 
+    private static final Set<String> ALLOWED_IMAGE_TYPES = Set.of(
+            "image/jpeg", "image/png", "image/gif", "image/webp", "image/bmp"
+    );
+    private static final Set<String> ALLOWED_VIDEO_TYPES = Set.of(
+            "video/mp4", "video/webm", "video/quicktime", "video/x-msvideo"
+    );
+    private static final long MAX_UPLOAD_SIZE = 50 * 1024 * 1024; // 50MB for general uploads
+    private static final long MAX_VOD_SIZE = 1024 * 1024 * 1024L; // 1GB for VOD
+
     public VodUploadResponse uploadVod(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("Video file is required");
+        }
+        if (!ALLOWED_VIDEO_TYPES.contains(file.getContentType())) {
+            throw new IllegalArgumentException("Only video files (MP4, WebM, MOV) are allowed");
+        }
+        if (file.getSize() > MAX_VOD_SIZE) {
+            throw new IllegalArgumentException("Video file size exceeds maximum (1GB)");
         }
 
         String uuid = UUID.randomUUID().toString();
@@ -87,6 +103,12 @@ public class UploadService {
     public UploadResponse upload(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File is required");
+        }
+        if (!ALLOWED_IMAGE_TYPES.contains(file.getContentType())) {
+            throw new IllegalArgumentException("Only image files (JPEG, PNG, GIF, WebP) are allowed");
+        }
+        if (file.getSize() > MAX_UPLOAD_SIZE) {
+            throw new IllegalArgumentException("File size exceeds maximum (50MB)");
         }
 
         String key = buildObjectKey(file.getOriginalFilename(), file.getContentType());

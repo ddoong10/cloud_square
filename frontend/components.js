@@ -15,7 +15,7 @@
                 </div>
                 <div class="nav-actions">
                     ${user
-                        ? `<a href="#/profile" class="nav-user">${user.name || user.email}</a>
+                        ? `<a href="#/profile" class="nav-user">${this.escapeHtml(user.name || user.email)}</a>
                            <button onclick="window.Api.logout(); window.Router.navigate('/login');" class="nav-logout-btn">로그아웃</button>`
                         : '<a href="#/login" class="nav-link">로그인</a>'}
                 </div>
@@ -27,7 +27,7 @@
             <div class="course-card" onclick="window.Router.navigate('/courses/${course.id}')">
                 <div class="course-card-thumb">
                     ${course.thumbnailUrl
-                        ? `<img src="${course.thumbnailUrl}" alt="${course.title}" loading="lazy">`
+                        ? `<img src="${this.escapeHtml(course.thumbnailUrl)}" alt="${this.escapeHtml(course.title)}" loading="lazy">`
                         : '<div class="course-card-placeholder">COURSE</div>'}
                 </div>
                 <div class="course-card-body">
@@ -52,7 +52,7 @@
             <div class="enrollment-card" onclick="window.Router.navigate('/courses/${enrollment.courseId}')">
                 <div class="enrollment-card-thumb">
                     ${enrollment.courseThumbnailUrl
-                        ? `<img src="${enrollment.courseThumbnailUrl}" alt="${enrollment.courseTitle}" loading="lazy">`
+                        ? `<img src="${this.escapeHtml(enrollment.courseThumbnailUrl)}" alt="${this.escapeHtml(enrollment.courseTitle)}" loading="lazy">`
                         : '<div class="course-card-placeholder">COURSE</div>'}
                 </div>
                 <div class="enrollment-card-body">

@@ -61,7 +61,7 @@ class ResidentNumberApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.available").value(true))
                 .andExpect(jsonPath("$.encryptedAtRest").value(false))
-                .andExpect(jsonPath("$.residentNumber").value("901010-1234567"));
+                .andExpect(jsonPath("$.residentNumber").value("901010-1******"));
     }
 
     private String loginAndGetToken(String email, String password) throws Exception {

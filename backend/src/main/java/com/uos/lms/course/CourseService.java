@@ -79,9 +79,12 @@ public class CourseService {
     }
 
     @Transactional
-    public CourseResponse update(Long courseId, CourseUpdateRequest request) {
+    public CourseResponse update(Long courseId, CourseUpdateRequest request, Long userId, boolean isAdmin) {
         Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new IllegalArgumentException("Course not found: " + courseId));
+                .orElseThrow(() -> new IllegalArgumentException("Course not found"));
+        if (!isAdmin && (course.getInstructor() == null || !course.getInstructor().getId().equals(userId))) {
+            throw new org.springframework.security.access.AccessDeniedException("You can only modify your own courses");
+        }
 
         if (request.title() != null) {
             course.setTitle(request.title().trim());
@@ -106,9 +109,12 @@ public class CourseService {
     }
 
     @Transactional
-    public void delete(Long courseId) {
+    public void delete(Long courseId, Long userId, boolean isAdmin) {
         Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new IllegalArgumentException("Course not found: " + courseId));
+                .orElseThrow(() -> new IllegalArgumentException("Course not found"));
+        if (!isAdmin && (course.getInstructor() == null || !course.getInstructor().getId().equals(userId))) {
+            throw new org.springframework.security.access.AccessDeniedException("You can only delete your own courses");
+        }
 
         // Delete related records in correct order to avoid FK violations
         List<Long> lectureIds = lectureRepository.findByCourseIdOrderBySortOrderAsc(courseId).stream()

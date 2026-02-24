@@ -111,8 +111,9 @@ public class UserController {
         }
         String normalized = value.replace("-", "").trim();
         if (normalized.length() == 13) {
-            return normalized.substring(0, 6) + "-" + normalized.substring(6);
+            // 앞 6자리 + 성별 1자리만 노출, 나머지 마스킹
+            return normalized.substring(0, 6) + "-" + normalized.charAt(6) + "******";
         }
-        return normalized;
+        return "***-*******";
     }
 }

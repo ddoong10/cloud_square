@@ -23,7 +23,7 @@
                 <div class="course-detail-header">
                     <div class="course-detail-thumb">
                         ${course.thumbnailUrl
-                            ? `<img src="${course.thumbnailUrl}" alt="${Components.escapeHtml(course.title)}">`
+                            ? `<img src="${Components.escapeHtml(course.thumbnailUrl)}" alt="${Components.escapeHtml(course.title)}">`
                             : '<div class="course-card-placeholder large">COURSE</div>'}
                     </div>
                     <div class="course-detail-info">

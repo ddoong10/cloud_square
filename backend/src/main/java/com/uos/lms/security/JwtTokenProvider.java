@@ -34,6 +34,9 @@ public class JwtTokenProvider {
         if (jwtSecret == null || jwtSecret.isBlank()) {
             throw new IllegalStateException("JWT_SECRET is required");
         }
+        if (jwtSecret.length() < 32) {
+            throw new IllegalStateException("JWT_SECRET must be at least 32 characters for security");
+        }
         secretKey = Keys.hmacShaKeyFor(sha256(jwtSecret));
     }
 

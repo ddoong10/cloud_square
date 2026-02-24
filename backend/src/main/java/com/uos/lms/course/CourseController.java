@@ -44,12 +44,20 @@ public class CourseController {
     }
 
     @PutMapping("/{courseId}")
-    public CourseResponse update(@PathVariable Long courseId, @Valid @RequestBody CourseUpdateRequest request) {
-        return courseService.update(courseId, request);
+    public CourseResponse update(@PathVariable Long courseId, @Valid @RequestBody CourseUpdateRequest request,
+                                 Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getPrincipal().toString());
+        return courseService.update(courseId, request, userId, hasAdminRole(authentication));
     }
 
     @DeleteMapping("/{courseId}")
-    public void delete(@PathVariable Long courseId) {
-        courseService.delete(courseId);
+    public void delete(@PathVariable Long courseId, Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getPrincipal().toString());
+        courseService.delete(courseId, userId, hasAdminRole(authentication));
+    }
+
+    private boolean hasAdminRole(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }
 }

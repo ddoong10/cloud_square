@@ -28,7 +28,7 @@
                     html += `
                     <tr>
                         <td>${c.id}</td>
-                        <td>${c.thumbnailUrl ? '<img src="' + c.thumbnailUrl + '" style="width:48px;height:32px;object-fit:cover;border-radius:4px">' : '<span class="text-muted">-</span>'}</td>
+                        <td>${c.thumbnailUrl ? '<img src="' + Components.escapeHtml(c.thumbnailUrl) + '" style="width:48px;height:32px;object-fit:cover;border-radius:4px">' : '<span class="text-muted">-</span>'}</td>
                         <td>${Components.escapeHtml(c.title)}</td>
                         <td>${Components.escapeHtml(c.category || '-')}</td>
                         <td>${c.lectureCount}</td>

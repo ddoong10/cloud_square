@@ -23,8 +23,9 @@ public class CertificateController {
     }
 
     @GetMapping("/api/certificates/{certificateNumber}")
-    public CertificateResponse getCertificate(@PathVariable String certificateNumber) {
-        return certificateService.getCertificate(certificateNumber);
+    public CertificateResponse getCertificate(@PathVariable String certificateNumber, Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getPrincipal().toString());
+        return certificateService.getCertificateWithOwnerCheck(certificateNumber, userId);
     }
 
     @GetMapping("/api/certificates/{certificateNumber}/verify")
@@ -33,7 +34,9 @@ public class CertificateController {
     }
 
     @GetMapping("/api/certificates/{certificateNumber}/pdf")
-    public ResponseEntity<byte[]> downloadPdf(@PathVariable String certificateNumber) throws IOException {
+    public ResponseEntity<byte[]> downloadPdf(@PathVariable String certificateNumber, Authentication authentication) throws IOException {
+        Long userId = Long.parseLong(authentication.getPrincipal().toString());
+        certificateService.getCertificateWithOwnerCheck(certificateNumber, userId);
         byte[] pdfBytes = certificateService.generatePdf(certificateNumber);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + certificateNumber + ".pdf\"")

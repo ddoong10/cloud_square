@@ -71,7 +71,17 @@ public class CertificateService {
     @Transactional(readOnly = true)
     public CertificateResponse getCertificate(String certificateNumber) {
         Certificate certificate = certificateRepository.findByCertificateNumber(certificateNumber)
-                .orElseThrow(() -> new IllegalArgumentException("Certificate not found: " + certificateNumber));
+                .orElseThrow(() -> new IllegalArgumentException("Certificate not found"));
+        return toResponse(certificate);
+    }
+
+    @Transactional(readOnly = true)
+    public CertificateResponse getCertificateWithOwnerCheck(String certificateNumber, Long userId) {
+        Certificate certificate = certificateRepository.findByCertificateNumber(certificateNumber)
+                .orElseThrow(() -> new IllegalArgumentException("Certificate not found"));
+        if (!certificate.getUser().getId().equals(userId)) {
+            throw new org.springframework.security.access.AccessDeniedException("You can only access your own certificates");
+        }
         return toResponse(certificate);
     }
 

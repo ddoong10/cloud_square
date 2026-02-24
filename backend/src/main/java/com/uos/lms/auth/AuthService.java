@@ -13,12 +13,21 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.Locale;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+
+    private static final int MAX_FAILED_ATTEMPTS = 5;
+    private static final long LOCKOUT_DURATION_SECONDS = 300; // 5분
+
+    private final ConcurrentHashMap<String, AtomicInteger> failedAttempts = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Instant> lockoutUntil = new ConcurrentHashMap<>();
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -28,16 +37,29 @@ public class AuthService {
     public LoginResponse login(LoginRequest request) {
         String email = normalizeEmail(request.email());
 
+        // 계정 잠금 확인
+        Instant lockedUntil = lockoutUntil.get(email);
+        if (lockedUntil != null && Instant.now().isBefore(lockedUntil)) {
+            log.warn("Login blocked: account locked [{}]", MaskingUtils.maskEmail(email));
+            throw new BadCredentialsException("Too many failed attempts. Try again later.");
+        }
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> {
+                    recordFailedAttempt(email);
                     log.warn("Login failed: user not found [{}]", MaskingUtils.maskEmail(email));
                     return new BadCredentialsException("Invalid email or password");
                 });
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+            recordFailedAttempt(email);
             log.warn("Login failed: bad password [{}]", MaskingUtils.maskEmail(email));
             throw new BadCredentialsException("Invalid email or password");
         }
+
+        // 로그인 성공 시 실패 카운터 초기화
+        failedAttempts.remove(email);
+        lockoutUntil.remove(email);
 
         String token = jwtTokenProvider.createAccessToken(user);
         return new LoginResponse(
@@ -46,6 +68,15 @@ public class AuthService {
                 jwtTokenProvider.getExpirationSeconds(),
                 user.getEffectiveRole()
         );
+    }
+
+    private void recordFailedAttempt(String email) {
+        int attempts = failedAttempts.computeIfAbsent(email, k -> new AtomicInteger(0)).incrementAndGet();
+        if (attempts >= MAX_FAILED_ATTEMPTS) {
+            lockoutUntil.put(email, Instant.now().plusSeconds(LOCKOUT_DURATION_SECONDS));
+            failedAttempts.remove(email);
+            log.warn("Account locked for {} seconds: [{}]", LOCKOUT_DURATION_SECONDS, MaskingUtils.maskEmail(email));
+        }
     }
 
     public SignupResponse signup(SignupRequest request) {
