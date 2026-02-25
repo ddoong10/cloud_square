@@ -9,6 +9,9 @@
         let heartbeatInterval = null;
         let player = null;
         let masterBlobUrl = null;
+        let savePosition = null;
+        let onBeforeUnload = null;
+        let onVisibilityChange = null;
 
         try {
             const courseId = params.courseId;
@@ -253,6 +256,39 @@
                 } catch (_) {}
             }, 30000);
 
+            // Save position helper (for page leave / tab switch)
+            savePosition = function (keepalive) {
+                if (!player || player.ended()) return;
+                var pos = Math.floor(player.currentTime());
+                if (pos <= 0) return;
+                var token = localStorage.getItem("lms_access_token");
+                if (!token) return;
+                var url = window.APP_CONFIG.API_BASE_URL + "/api/lectures/" + lectureId + "/heartbeat";
+                fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": "Bearer " + token,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        currentPosition: pos,
+                        watchedSeconds: 0,
+                        playbackSpeed: player.playbackRate()
+                    }),
+                    keepalive: !!keepalive
+                }).catch(function () {});
+            }
+
+            // Save position on tab close / browser close
+            onBeforeUnload = function () { savePosition(true); };
+            window.addEventListener("beforeunload", onBeforeUnload);
+
+            // Save position on tab switch (alt-tab, etc.)
+            onVisibilityChange = function () {
+                if (document.visibilityState === "hidden") savePosition(false);
+            };
+            document.addEventListener("visibilitychange", onVisibilityChange);
+
             // On video ended
             player.on("ended", async function () {
                 try {
@@ -276,6 +312,12 @@
 
         // Cleanup function
         return function () {
+            // Save current position before leaving (SPA navigation)
+            if (savePosition) savePosition(false);
+
+            if (onBeforeUnload) window.removeEventListener("beforeunload", onBeforeUnload);
+            if (onVisibilityChange) document.removeEventListener("visibilitychange", onVisibilityChange);
+
             if (heartbeatInterval) {
                 clearInterval(heartbeatInterval);
                 heartbeatInterval = null;
