@@ -39,7 +39,13 @@
                         }
                     }
                     const result = route.handler(params);
-                    if (typeof result === "function") {
+                    if (result && typeof result.then === "function") {
+                        result.then(function (cleanup) {
+                            if (typeof cleanup === "function") {
+                                currentCleanup = cleanup;
+                            }
+                        });
+                    } else if (typeof result === "function") {
                         currentCleanup = result;
                     }
                     return;
