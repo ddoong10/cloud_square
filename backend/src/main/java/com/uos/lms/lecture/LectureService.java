@@ -3,6 +3,7 @@ package com.uos.lms.lecture;
 import com.amazonaws.services.s3.AmazonS3;
 import com.uos.lms.common.HashingUtils;
 import com.uos.lms.config.StorageProperties;
+import com.uos.lms.upload.UploadService;
 import com.uos.lms.config.VodStationProperties;
 import com.uos.lms.course.Course;
 import com.uos.lms.course.CourseRepository;
@@ -232,7 +233,7 @@ public class LectureService {
                 lecture.getId(),
                 lecture.getTitle(),
                 decryptedVideoUrl,
-                decryptedThumbnailUrl,
+                UploadService.toProxyUrl(decryptedThumbnailUrl, staticBaseUrl),
                 lecture.getCourse() != null ? lecture.getCourse().getId() : null,
                 lecture.getDescription(),
                 lecture.getVodUrl(),
@@ -248,7 +249,7 @@ public class LectureService {
                 lecture.getId(),
                 lecture.getTitle(),
                 null,
-                decryptedThumbnailUrl,
+                UploadService.toProxyUrl(decryptedThumbnailUrl, staticBaseUrl),
                 lecture.getCourse() != null ? lecture.getCourse().getId() : null,
                 lecture.getDescription(),
                 null,

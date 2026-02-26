@@ -27,7 +27,7 @@
             <div class="course-card" onclick="window.Router.navigate('/courses/${course.id}')">
                 <div class="course-card-thumb">
                     ${course.thumbnailUrl
-                        ? `<img src="${this.escapeHtml(course.thumbnailUrl)}" alt="${this.escapeHtml(course.title)}" loading="lazy">`
+                        ? `<img src="${this.escapeHtml(this.resolveUrl(course.thumbnailUrl))}" alt="${this.escapeHtml(course.title)}" loading="lazy">`
                         : '<div class="course-card-placeholder">COURSE</div>'}
                 </div>
                 <div class="course-card-body">
@@ -52,7 +52,7 @@
             <div class="enrollment-card" onclick="window.Router.navigate('/courses/${enrollment.courseId}')">
                 <div class="enrollment-card-thumb">
                     ${enrollment.courseThumbnailUrl
-                        ? `<img src="${this.escapeHtml(enrollment.courseThumbnailUrl)}" alt="${this.escapeHtml(enrollment.courseTitle)}" loading="lazy">`
+                        ? `<img src="${this.escapeHtml(this.resolveUrl(enrollment.courseThumbnailUrl))}" alt="${this.escapeHtml(enrollment.courseTitle)}" loading="lazy">`
                         : '<div class="course-card-placeholder">COURSE</div>'}
                 </div>
                 <div class="enrollment-card-body">
@@ -110,6 +110,12 @@
 
         error(message) {
             return `<div class="error-box">${this.escapeHtml(message)}</div>`;
+        },
+
+        resolveUrl(url) {
+            if (!url) return null;
+            if (url.startsWith('http')) return url;
+            return window.APP_CONFIG.API_BASE_URL + url;
         },
 
         escapeHtml(str) {

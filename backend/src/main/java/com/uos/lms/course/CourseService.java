@@ -6,8 +6,10 @@ import com.uos.lms.lecture.LectureRepository;
 import com.uos.lms.progress.LectureProgressRepository;
 import com.uos.lms.user.User;
 import com.uos.lms.user.UserRepository;
+import com.uos.lms.upload.UploadService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,9 @@ public class CourseService {
     private final EnrollmentRepository enrollmentRepository;
     private final CertificateRepository certificateRepository;
     private final LectureProgressRepository lectureProgressRepository;
+
+    @Value("${app.static-base-url}")
+    private String staticBaseUrl;
 
     @Transactional(readOnly = true)
     public List<CourseResponse> listPublished() {
@@ -141,7 +146,7 @@ public class CourseService {
                 course.getId(),
                 course.getTitle(),
                 course.getDescription(),
-                course.getThumbnailUrl(),
+                UploadService.toProxyUrl(course.getThumbnailUrl(), staticBaseUrl),
                 instructor != null ? instructor.getId() : null,
                 instructor != null ? instructor.getName() : null,
                 course.getCategory(),

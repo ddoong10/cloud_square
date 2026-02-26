@@ -182,9 +182,20 @@ public class UploadService {
     }
 
     private String buildStaticUrl(String key) {
-        String normalizedBaseUrl = staticBaseUrl.endsWith("/")
+        return "/api/files/" + key;
+    }
+
+    public static String toProxyUrl(String url, String staticBaseUrl) {
+        if (url == null || url.isBlank()) {
+            return null;
+        }
+        String normalized = staticBaseUrl.endsWith("/")
                 ? staticBaseUrl.substring(0, staticBaseUrl.length() - 1)
                 : staticBaseUrl;
-        return normalizedBaseUrl + "/" + key;
+        String prefix = normalized + "/";
+        if (url.startsWith(prefix)) {
+            return "/api/files/" + url.substring(prefix.length());
+        }
+        return url;
     }
 }

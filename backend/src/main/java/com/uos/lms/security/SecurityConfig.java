@@ -56,6 +56,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
                         // Certificate verification (public)
                         .requestMatchers(HttpMethod.GET, "/api/certificates/*/verify").permitAll()
+                        // File proxy (public — thumbnails are already public on CDN)
+                        .requestMatchers(HttpMethod.GET, "/api/files/**").permitAll()
                         // Uploads: admin and instructor
                         .requestMatchers(HttpMethod.POST, "/api/uploads").hasAnyRole("ADMIN", "INSTRUCTOR")
                         .requestMatchers(HttpMethod.POST, "/api/uploads/vod").hasAnyRole("ADMIN", "INSTRUCTOR")
