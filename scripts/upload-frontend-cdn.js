@@ -74,7 +74,11 @@ async function main() {
     maxRetries: 2,
   });
 
-  const files = collectFiles(frontendDir, "");
+  const ERROR_PAGE_PATTERN = /^\d{3}error\.html$/;
+  const allFiles = collectFiles(frontendDir, "");
+  const files = allFiles.filter((f) => !ERROR_PAGE_PATTERN.test(path.basename(f.relativePath)));
+  const errorPages = allFiles.filter((f) => ERROR_PAGE_PATTERN.test(path.basename(f.relativePath)));
+
   console.log(`Uploading ${files.length} frontend files to s3://${cdnBucket}/${cdnPrefix || "(root)"}`);
 
   for (const file of files) {
@@ -105,7 +109,29 @@ async function main() {
     console.log(`  ${key} (${contentType})`);
   }
 
-  console.log(`Frontend CDN upload complete: ${files.length} files`);
+  // Upload error pages to bucket root (no prefix) for S3 static website hosting
+  if (errorPages.length > 0) {
+    console.log(`Uploading ${errorPages.length} error pages to s3://${cdnBucket}/ (bucket root)`);
+    for (const file of errorPages) {
+      const key = path.basename(file.relativePath);
+      const body = fs.readFileSync(file.fullPath);
+
+      await s3
+        .putObject({
+          Bucket: cdnBucket,
+          Key: key,
+          Body: body,
+          ContentType: "text/html; charset=utf-8",
+          CacheControl: "public, max-age=0, must-revalidate",
+          ACL: "public-read",
+        })
+        .promise();
+
+      console.log(`  ${key} (error page, bucket root)`);
+    }
+  }
+
+  console.log(`Frontend CDN upload complete: ${files.length} files, ${errorPages.length} error pages`);
 }
 
 main().catch((error) => {
