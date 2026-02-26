@@ -75,3 +75,6 @@ logging:
   level:
     root: INFO
     com.uos.lms: INFO
+    com.uos.lms.security.DbAccessAuditFilter: INFO
+    org.hibernate.SQL: ${HIBERNATE_SQL_LOG_LEVEL:WARN}
+    org.hibernate.orm.jdbc.bind: ${HIBERNATE_BIND_LOG_LEVEL:WARN}
