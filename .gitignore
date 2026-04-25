@@ -1,0 +1,35 @@
+# Build artifacts
+dist/
+**/build/
+**/out/
+**/target/
+*.jar
+*.war
+*.tar.gz
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Gradle
+.gradle/

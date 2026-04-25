@@ -67,7 +67,8 @@ cloud_square/
 │       ├── progress/       # 강의별 진도 추적
 │       ├── security/       # JWT 필터, SecurityConfig
 │       ├── upload/         # Object Storage 파일 업로드
-│       └── user/           # 사용자 관리, 관리자 통계
+│       ├── user/           # 사용자 관리, 관리자 통계
+│       └── vod/            # NCP VOD Station 클라이언트
 │
 ├── frontend/
 │   ├── index.html          # SPA 진입점
@@ -130,9 +131,13 @@ cloud_square/
 | Method | Path | 권한 | 설명 |
 |--------|------|------|------|
 | GET | `/api/me` | USER | 내 정보 |
+| GET | `/api/me/resident-number` | USER | 본인 주민등록번호 조회 (KMS 봉투복호화, 뒷자리 마스킹) |
 | PUT | `/api/me/name` | USER | 이름 변경 |
 | PUT | `/api/me/password` | USER | 비밀번호 변경 (204) |
+| GET | `/api/admin/users` | ADMIN | 사용자 목록 |
 | GET | `/api/admin/stats` | ADMIN | 관리자 통계 |
+
+> 회원가입 시 입력한 주민등록번호는 NCP KMS 봉투암호화 후 DB에 저장되며, 평문은 저장되지 않습니다. 조회 시에도 뒷자리는 마스킹 처리됩니다.
 
 ### 과정
 | Method | Path | 권한 | 설명 |
@@ -226,10 +231,13 @@ python3 -m http.server 5500  # http://localhost:5500
 
 ### 데모 계정
 
+`dev` 또는 `local` 프로파일로 실행하면 `DemoDataInitializer`가 아래 계정을 자동 시드합니다.
+
 | 역할 | 이메일 | 비밀번호 |
 |------|--------|----------|
 | 사용자 | `demo@lms.local` | `demo1234!` |
 | 관리자 | `admin@lms.local` | `admin1234!` |
+| 강사 | `instructor@lms.local` | `instructor1234!` |
 
 ## 환경변수
 

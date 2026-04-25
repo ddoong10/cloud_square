@@ -43,8 +43,8 @@ app:
     token-creator-id: ${KMS_TOKEN_CREATOR_ID:}
   static-base-url: ${STATIC_BASE_URL:https://static.uoscholar-server.store}
   vod:
-    cdn-base-url: ${VOD_CDN_BASE_URL:https://TODO_VOD_CDN}
-    bucket-enc-name: ${VOD_BUCKET_ENC_NAME:TODO_VOD_BUCKET_ENC}
+    cdn-base-url: ${VOD_CDN_BASE_URL:}
+    bucket-enc-name: ${VOD_BUCKET_ENC_NAME:}
     input-bucket: ${VOD_INPUT_BUCKET:lms-vod-input}
     edge-auth:
       enabled: ${EDGE_AUTH_ENABLED:false}
