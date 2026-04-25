@@ -1,13 +1,14 @@
-name: publish-deploy-artifacts
+name: build
 
 on:
   push:
     branches:
       - main
+  pull_request:
   workflow_dispatch:
 
 jobs:
-  build-and-publish:
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -26,42 +27,15 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Build deploy artifacts
+      - name: Build deploy artifact
         run: |
           chmod +x backend/gradlew
           chmod +x scripts/package-deploy.sh
           ./scripts/package-deploy.sh
 
-      - name: Install AWS SDK for JavaScript v2.348.0
-        run: |
-          npm install --no-save aws-sdk@2.348.0
-
-      - name: Publish WAS artifact to NCP Object Storage
-        env:
-          NCP_DEPLOY_ACCESS_KEY: ${{ secrets.NCP_DEPLOY_ACCESS_KEY }}
-          NCP_DEPLOY_SECRET_KEY: ${{ secrets.NCP_DEPLOY_SECRET_KEY }}
-          NCP_S3_REGION: ${{ secrets.NCP_S3_REGION }}
-          NCP_S3_ENDPOINT: ${{ secrets.NCP_S3_ENDPOINT }}
-          NCP_DEPLOY_BUCKET: ${{ secrets.NCP_DEPLOY_BUCKET }}
-          NCP_DEPLOY_PREFIX: ${{ secrets.NCP_DEPLOY_PREFIX }}
-          GIT_SHA: ${{ github.sha }}
-        run: |
-          node scripts/upload-to-ncp-s3.js
-
-      - name: Upload frontend to CDN bucket
-        env:
-          NCP_DEPLOY_ACCESS_KEY: ${{ secrets.NCP_DEPLOY_ACCESS_KEY }}
-          NCP_DEPLOY_SECRET_KEY: ${{ secrets.NCP_DEPLOY_SECRET_KEY }}
-          NCP_S3_REGION: ${{ secrets.NCP_S3_REGION }}
-          NCP_S3_ENDPOINT: ${{ secrets.NCP_S3_ENDPOINT }}
-          NCP_CDN_BUCKET: ${{ secrets.NCP_CDN_BUCKET }}
-          NCP_CDN_PREFIX: ${{ secrets.NCP_CDN_PREFIX }}
-        run: |
-          node scripts/upload-frontend-cdn.js
-
-      - name: Upload artifacts to GitHub (optional)
+      - name: Upload deploy artifact
         uses: actions/upload-artifact@v4
         with:
-          name: deploy-artifacts-${{ github.sha }}
-          path: |
-            dist/lms-was-deploy.tar.gz
+          name: lms-was-deploy-${{ github.sha }}
+          path: dist/lms-was-deploy.tar.gz
+          retention-days: 14
